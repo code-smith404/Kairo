@@ -38,10 +38,18 @@ jobs:
       - name: Validate example config
         run: ./zig-out/bin/kairo --validate-config -c examples/config
 
+      - name: Build (software renderer)
+        run: zig build -Dscenefx=false --prefix zig-out-plain
+
       - name: Headless smoke test
         run: |
-          XDG_RUNTIME_DIR=/tmp/kairo-runtime
+          set -euo pipefail
+          if ldd zig-out-plain/bin/kairo | grep -q libscenefx; then
+            echo "software build unexpectedly links SceneFX" >&2
+            exit 1
+          fi
+          export XDG_RUNTIME_DIR=/tmp/kairo-runtime
           mkdir -p "$XDG_RUNTIME_DIR"
           chmod 700 "$XDG_RUNTIME_DIR"
-          XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" ./zig-out/bin/kairo \
+          timeout 30 env WLR_RENDERER=pixman ./zig-out-plain/bin/kairo \
             --headless --exit-after 1500 --log-level info

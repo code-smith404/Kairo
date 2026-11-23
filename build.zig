@@ -40,8 +40,8 @@ pub fn build(b: *std.Build) void {
     const link_cmd = b.addSystemCommand(&.{ "cc", "-o" });
     const linked = link_cmd.addOutputFileArg("kairo");
     link_cmd.addFileArg(kairo_obj.getEmittedBin());
+    if (use_scenefx) link_cmd.addArg("-lscenefx-0.5");
     link_cmd.addArgs(&.{
-        "-lscenefx-0.5",
         "-lwlroots-0.20",
         "-lwayland-server",
         "-lxkbcommon",
