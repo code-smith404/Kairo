@@ -11,7 +11,7 @@ wlroots owns.
 2. `Server.init` creates the `wl_display`, acquires the backend, creates the
    SceneFX renderer, allocator, scene graph, output layout and all protocol
    globals (compositor, xdg-shell, layer-shell, seat, cursor, idle notify,
-   screencopy, dmabuf, syncobj, foreign-toplevel and XWayland).
+   screencopy, dmabuf, syncobj, foreign-toplevel, session-lock and XWayland).
 3. `Server.start` starts the backend and opens the IPC socket.
 4. `main.zig` starts autostart entries, exports session variables, then calls
    `Server.run` (`wl_display_run`).
@@ -72,11 +72,25 @@ and gives every callback a typed owner without global maps.
 Window rules are applied on first map. Geometry is animated with `RectTrack`
 and opacity with `Track`; both are pure value tracks in `animation/`.
 
+## Session lock
+
+`core/session_lock.zig` owns the `ext-session-lock-v1` manager, the active lock,
+per-output lock surfaces and opaque backdrops. Lock surfaces live in the final
+`lock_tree`, so they cover windows and layer surfaces. While `session_locked` is
+true, keyboard focus is restricted to the lock surface for the focused output,
+pointer hit testing only considers lock surfaces, normal bindings are skipped,
+and `focusWindow` refuses to change window focus. `bindl` bindings are the
+explicit escape hatch. Unlock clears lock nodes/backdrops and restores normal
+arrangement, pointer focus and the top window. Authentication is delegated to
+the configured `lock_command` client.
+
 ## Input
 
 `core/input.zig` owns a `wlr_keyboard_group`, the xkb keymap, the cursor, the
 repeat timer and all pointer/keyboard listeners. Key bindings are resolved to
-keysyms at config load and matched against the current xkb state.
+keysyms at config load and matched against the current xkb state, the active
+binding mode, and the session-lock policy. The active mode is a fixed-size
+buffer so mode changes allocate nothing.
 
 Pointer handling does hit testing against the scene graph, updates keyboard and
 pointer focus, and implements interactive move/resize. `focus_follows_mouse`
@@ -99,7 +113,8 @@ The wire format and request/response shapes are documented in
 arrays, so a loaded config has one allocation and deterministic ownership.
 `config/loader.zig` is a line parser with `source=` includes, `$var` expansion,
 per-line diagnostics, and validation of bindings, rules, scratchpads and
-monitor entries. The first binding in a user config clears the built-in set.
+monitor entries. The first default-mode binding in a user config clears the
+built-in default bindings; custom-mode bindings do not.
 
 Reload builds a complete new config, rejects it if any diagnostic was emitted,
 then swaps it in and re-applies outputs, effects and keymaps.

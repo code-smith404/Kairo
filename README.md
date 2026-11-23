@@ -22,15 +22,18 @@ beta software. The table below describes what is implemented today.
 | Tiling | 13 layouts: tile, scroller, vertical-scroller, master-stack, monocle, grid, deck, dwindle, centered-master, center-tile, vertical-tile, vertical-grid, tg-mix |
 | Tags | 32-bit tag masks, multiple visible tags, per-tag layout state, tag history |
 | Effects | SceneFX blur, shadow, rounded corners, opacity, open/close/move animations |
-| Input | libinput via wlroots, xkbcommon keymaps, keyboard groups, repeats, mouse/axis bindings, interactive move/resize |
+| Input | libinput via wlroots, xkbcommon keymaps, keyboard groups, repeats, binding modes, mouse/axis bindings, interactive move/resize |
 | Scratchpads | Named scratchpads with rules and toggle commands |
 | Overview | Live window grid overview (Super+Shift+Space) |
+| Session | `ext-session-lock-v1`, lock-aware input policy, configurable locker command |
 | Control | `kairoctl` JSON IPC, state queries, command dispatch, event subscription |
 | Configuration | Mango-style INI/TOML-like file, includes, variables, hot reload on Super+R |
 
-Not yet implemented: session locking, the graphical switcher overlay, and
-`ext-background-effect-v1` for client-requested blur. `kairoctl` and the config
-loader report these plainly instead of pretending they work.
+Not yet implemented: the graphical switcher overlay and
+`ext-background-effect-v1` for client-requested blur. Session locking is
+implemented by the compositor protocol; authentication and the lock-screen UI
+belong to the configured lock client. `kairoctl` and the config loader report
+unavailable features plainly instead of pretending they work.
 
 ## Requirements
 
@@ -66,6 +69,14 @@ Run the unit test suite with:
 
 ```sh
 zig build test
+```
+
+The end-to-end session-lock test builds a small Wayland client against the
+staging `ext-session-lock-v1` protocol and verifies lock, configure, IPC state
+and unlock against a real compositor:
+
+```sh
+KAIRO_BIN=./zig-out-plain/bin/kairo WLR_RENDERER=pixman ./tests/session_lock.sh
 ```
 
 ### Why the build calls `cc`
@@ -133,6 +144,17 @@ full list.
 | Mouse `Super+Left` | move window |
 | Mouse `Super+Right` | resize window |
 
+Session locking is client-driven. Configure a locker that supports
+`ext-session-lock-v1`:
+
+```ini
+lock_command = swaylock -f
+bind = SUPER+ALT, L, toggle_session_lock
+```
+
+While locked, normal bindings are suppressed. Use `bindl` for a binding that
+must remain active during a lock. Authentication never happens inside Kairo.
+
 ## Configuration
 
 Kairo accepts a line-oriented `key = value` file. Bindings use
@@ -148,6 +170,7 @@ inner_gaps = 4
 border_width = 2
 border_color_focused = #4c7899
 border_color_unfocused = #333333
+lock_command = swaylock -f
 
 animation = true
 animation_duration = 180
@@ -159,6 +182,7 @@ corner_radius = 8
 bind = SUPER, Return, spawn, foot
 bind = SUPER+SHIFT, Q, quit
 bind = SUPER, 2, view_tag, 2
+bindl = SUPER, Escape, set_key_mode, default
 mousebind = SUPER, left, moveresize, curmove
 axisbind = SUPER, down, view_next_tag
 
@@ -167,7 +191,8 @@ scratchpad = name:term, command:foot, app_id:foot
 ```
 
 See [docs/configuration.md](docs/configuration.md) for every option and command,
-and [examples/config](examples/config) for a complete starting point.
+[docs/keybindings.md](docs/keybindings.md) for binding modes, and
+[examples/config](examples/config) for a complete starting point.
 
 ## Control socket
 
@@ -201,11 +226,17 @@ src/
   ipc/              JSON protocol and control socket
   scratchpad/       named scratchpad management
   window/           window rules and glob matching
+  core/session_lock.zig  ext-session-lock-v1 policy and lock surfaces
   util/             geometry and logging
 cmd/kairoctl.zig    control client
 protocols/          wlroots protocol XML/headers not shipped by distro packages
 docs/               user and developer documentation
 packaging/arch/     Arch Linux PKGBUILD
+benchmarks/         reproducible idle measurement
+tests/              Wayland integration clients and scripts
+ROADMAP.md         milestones and acceptance criteria
+ARCHITECTURE.md    subsystem map and ownership
+PERFORMANCE.md     baseline and measurement rules
 ```
 
 ## License

@@ -26,6 +26,7 @@ Kairo currently ignores.
 | `{"command":"toggle_floating"}` | Toggle floating for the focused window |
 | `{"command":"reload"}` | Reload the configuration |
 | `{"command":"dispatch","args":"view_tag 2"}` | Run any config command |
+| `{"command":"dispatch","args":"set_key_mode resize"}` | Enter a binding mode |
 | `{"command":"subscribe","events":["window","tag"]}` | Subscribe to events |
 
 Commands with a hyphen are accepted too: `toggle-floating`, `set-layout`.
@@ -56,7 +57,7 @@ Command-style requests that do not query state return `{"ok":true}`.
   "ok": true,
   "data": {
     "name": "kairo",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "wlroots": "0.20",
     "scenefx": true
   }
@@ -142,7 +143,7 @@ and adds `version` and `focused_window`:
 {
   "ok": true,
   "data": {
-    "version": "0.1.0",
+    "version": "0.2.0",
     "focused_window": 2,
     "windows": [],
     "monitors": [],
@@ -162,6 +163,7 @@ subscribed state changes:
 {"event":"tag","data":{ ... same shape as tags ... }}
 {"event":"output","data":[ ... same shape as monitors ... ]}
 {"event":"layout","data":["tile","scroller", ...]}
+{"event":"session","data":{"locked":false,"key_mode":"default"}}
 ```
 
 Events are snapshots, not deltas. A slow client can therefore drop intermediate
@@ -177,7 +179,7 @@ $ kairoctl version
   "ok": true,
   "data": {
     "name": "kairo",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "wlroots": "0.20",
     "scenefx": true
   }

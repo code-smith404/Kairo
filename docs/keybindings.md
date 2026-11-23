@@ -1,8 +1,9 @@
 # Keybindings
 
-`Super` is the default modifier (`mod` in the config). Declaring any `bind`,
-`mousebind` or `axisbind` option replaces the corresponding built-in set, so
-copy the entries you want into your config if you customise bindings.
+`Super` is the default modifier (`mod` in the config). Declaring the first
+default-mode `bind` replaces the built-in default bindings, so copy the entries
+you want into your config if you customise them. Bindings in a custom mode do
+not clear the defaults.
 
 ## Built-in bindings
 
@@ -38,6 +39,34 @@ copy the entries you want into your config if you customise bindings.
 
 The `Super+Tab` switcher is a focus cycle; Kairo does not draw a separate
 switcher overlay yet.
+
+## Binding modes
+
+`mode = NAME` scopes the following bindings. Enter a mode with
+`set_key_mode NAME`; use `default` to leave it.
+
+```ini
+mode = resize
+bind = SUPER, H, set_master_factor, -0.05
+bind = SUPER, L, set_master_factor, +0.05
+bindl = SUPER, Escape, set_key_mode, default
+
+mode = default
+bind = SUPER, R, set_key_mode, resize
+```
+
+## Session locking
+
+`bindl` bindings remain active while the session is locked. Do not bind
+destructive window actions with `bindl`.
+
+```ini
+lock_command = swaylock -f
+bind = SUPER+ALT, L, toggle_session_lock
+```
+
+Kairo configures lock surfaces and confines input, but the configured lock
+client owns authentication and the lock-screen UI.
 
 ## Modifiers
 

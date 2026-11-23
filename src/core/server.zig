@@ -17,6 +17,7 @@ const loader = @import("../config/loader.zig");
 const Input = @import("input.zig").Input;
 const Layers = @import("layers.zig").Layers;
 const XWayland = @import("xwayland.zig").XWayland;
+const SessionLock = @import("session_lock.zig").SessionLock;
 const ipc = @import("../ipc/server.zig");
 const Scratchpad = @import("../scratchpad/scratchpad.zig").Manager;
 
@@ -46,6 +47,8 @@ pub const Server = struct {
     xwayland: ?*XWayland = null,
     ipc: ?*ipc.Ipc = null,
     overview_active: bool = false,
+    headless: bool = false,
+    session_lock: ?*SessionLock = null,
 
     outputs: std.ArrayList(*Output),
     windows: std.ArrayList(*Window),
@@ -64,6 +67,7 @@ pub const Server = struct {
     top_window_tree: *c.struct_wlr_scene_tree,
     top_layer_tree: *c.struct_wlr_scene_tree,
     overlay_tree: *c.struct_wlr_scene_tree,
+    lock_tree: *c.struct_wlr_scene_tree,
 
     new_output: wl.Listener,
     new_xdg_toplevel: wl.Listener,
@@ -96,6 +100,7 @@ pub const Server = struct {
             .xdg_shell = undefined,
             .layer_shell = undefined,
             .config = config,
+            .headless = headless,
             .input = undefined,
             .layers = undefined,
             .scratchpads = undefined,
@@ -110,6 +115,7 @@ pub const Server = struct {
             .top_window_tree = undefined,
             .top_layer_tree = undefined,
             .overlay_tree = undefined,
+            .lock_tree = undefined,
             .new_output = .{ .notify = handleNewOutput },
             .new_xdg_toplevel = .{ .notify = handleNewXdgToplevel },
             .new_layer_surface = .{ .notify = handleNewLayerSurface },
@@ -168,6 +174,14 @@ pub const Server = struct {
         self.top_window_tree = @ptrCast(c.wlr_scene_tree_create(&self.scene.tree));
         self.top_layer_tree = @ptrCast(c.wlr_scene_tree_create(&self.scene.tree));
         self.overlay_tree = @ptrCast(c.wlr_scene_tree_create(&self.scene.tree));
+        // The lock tree is deliberately last: lock surfaces and their opaque
+        // backdrop must cover every normal window and layer surface.
+        self.lock_tree = @ptrCast(c.wlr_scene_tree_create(&self.scene.tree));
+
+        self.session_lock = SessionLock.init(self, self.lock_tree) catch |err| blk: {
+            log.err("session lock unavailable: {s}", .{@errorName(err)});
+            break :blk null;
+        };
 
         effects.configureSceneBlur(
             self.scene,
@@ -223,6 +237,12 @@ pub const Server = struct {
         }
 
         self.seat = c.wlr_seat_create(self.display, "seat0") orelse return error.SeatCreateFailed;
+        if (headless) {
+            // The headless backend has no physical input devices. Advertise the
+            // seat capabilities so clients and integration tests can still
+            // exercise keyboard focus and lock confinement.
+            c.wlr_seat_set_capabilities(self.seat, c.WL_SEAT_CAPABILITY_POINTER | c.WL_SEAT_CAPABILITY_KEYBOARD);
+        }
         self.cursor = c.wlr_cursor_create() orelse return error.CursorCreateFailed;
         c.wlr_cursor_attach_output_layout(self.cursor, self.output_layout);
         self.cursor_manager = c.wlr_xcursor_manager_create(null, self.config.cursor_size) orelse return error.XCursorCreateFailed;
@@ -279,6 +299,10 @@ pub const Server = struct {
         wl.remove(&self.seat.events.request_set_cursor, &self.request_set_cursor);
         wl.remove(&self.seat.events.request_set_selection, &self.request_set_selection);
         wl.remove(&self.seat.events.request_set_primary_selection, &self.request_set_primary_selection);
+        if (self.session_lock) |sl| {
+            self.session_lock = null;
+            sl.deinit();
+        }
         while (self.windows.items.len > 0) self.windows.items[0].destroy();
         if (self.xwayland) |xw| xw.deinit();
         for (self.outputs.items) |o| o.destroy();
@@ -320,6 +344,10 @@ pub const Server = struct {
 
     pub fn emitLayout(self: *Server) void {
         if (self.ipc) |i| i.emit(.layout);
+    }
+
+    pub fn emitSession(self: *Server) void {
+        if (self.ipc) |i| i.emit(.session);
     }
 
     pub fn setConfigPath(self: *Server, path: []const u8) void {
@@ -366,6 +394,9 @@ pub const Server = struct {
             self.arrangeOverview();
         } else {
             for (self.outputs.items) |o| o.arrange();
+        }
+        if (self.session_locked) {
+            if (self.session_lock) |sl| sl.reposition();
         }
         self.emitWindow();
         self.emitOutput();
@@ -441,6 +472,13 @@ pub const Server = struct {
         return null;
     }
 
+    pub fn findOutputByWlr(self: *Server, wlr_output: *c.struct_wlr_output) ?*Output {
+        for (self.outputs.items) |o| {
+            if (o.wlr_output == wlr_output) return o;
+        }
+        return null;
+    }
+
     pub fn findOutputByName(self: *Server, name: []const u8) ?*Output {
         for (self.outputs.items) |o| {
             if (o.wlr_output.name) |n| {
@@ -464,6 +502,7 @@ pub const Server = struct {
     }
 
     pub fn focusWindow(self: *Server, window: ?*Window, output: ?*Output) void {
+        if (self.session_locked) return;
         if (output) |o| self.focused_output = o;
         const w = window orelse {
             c.wlr_seat_keyboard_notify_clear_focus(self.seat);
@@ -544,7 +583,14 @@ pub const Server = struct {
     }
 
     pub fn updateInputFocus(self: *Server) void {
-        if (self.session_locked) return;
+        if (self.session_locked) {
+            if (self.session_lock) |sl| {
+                sl.updateKeyboardFocus();
+            } else {
+                c.wlr_seat_keyboard_notify_clear_focus(self.seat);
+            }
+            return;
+        }
         const w = self.focused_window orelse {
             c.wlr_seat_keyboard_notify_clear_focus(self.seat);
             return;
@@ -787,8 +833,18 @@ pub const Server = struct {
             .mouse_resize => {
                 if (focused) |w| self.input.beginResize(w, c.WLR_EDGE_BOTTOM | c.WLR_EDGE_RIGHT);
             },
-            .set_key_mode => log.warn("key modes are not implemented", .{}),
-            .toggle_session_lock => log.warn("session lock is not implemented", .{}),
+            .set_key_mode => self.input.setMode(std.mem.trim(u8, args, " \t")),
+            .toggle_session_lock => {
+                if (self.session_locked) {
+                    log.info("session is already locked; unlock through the lock client", .{});
+                } else if (self.session_lock == null) {
+                    log.warn("toggle_session_lock: ext-session-lock-v1 is unavailable", .{});
+                } else if (self.config.lock_command.len == 0) {
+                    log.warn("toggle_session_lock: no lock_command configured", .{});
+                } else {
+                    self.spawn(self.config.lock_command);
+                }
+            },
             else => {},
         }
         _ = cfg_cmd;
@@ -993,6 +1049,7 @@ pub const Server = struct {
         _ = c.wlr_xcursor_manager_load(self.cursor_manager, out.wlr_output.scale);
         if (self.focused_output == null) self.focused_output = out;
         log.info("output {s} added ({d}x{d})", .{ std.mem.span(out.wlr_output.name), out.wlr_output.width, out.wlr_output.height });
+        if (self.session_lock) |sl| sl.refreshOutputs();
         self.arrangeAll();
     }
 

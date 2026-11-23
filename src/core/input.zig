@@ -11,6 +11,7 @@ const Window = @import("window.zig").Window;
 const Output = @import("output.zig").Output;
 
 const MOD_MASK: u32 = c.WLR_MODIFIER_SHIFT | c.WLR_MODIFIER_CTRL | c.WLR_MODIFIER_ALT | c.WLR_MODIFIER_LOGO;
+const DEFAULT_MODE = "default";
 
 pub const InteractiveMode = enum { move, resize };
 
@@ -46,6 +47,8 @@ pub const Input = struct {
     xkb_options: ?[:0]u8 = null,
     xkb_rules: ?[:0]u8 = null,
     xkb_model: ?[:0]u8 = null,
+    mode_buf: [32]u8 = [_]u8{0} ** 32,
+    mode_len: usize = DEFAULT_MODE.len,
 
     binding_syms: [config.MAX_BINDINGS]u32 = [_]u32{0} ** config.MAX_BINDINGS,
     binding_valid: [config.MAX_BINDINGS]bool = [_]bool{false} ** config.MAX_BINDINGS,
@@ -78,6 +81,7 @@ pub const Input = struct {
         self.cursor_frame.data = self;
         self.key.data = self;
         self.modifiers.data = self;
+        @memcpy(self.mode_buf[0..DEFAULT_MODE.len], DEFAULT_MODE);
 
         wl.add(&server.cursor.*.events.motion, &self.cursor_motion);
         wl.add(&server.cursor.*.events.motion_absolute, &self.cursor_motion_abs);
@@ -162,6 +166,40 @@ pub const Input = struct {
         self.loadKeymap();
         c.wlr_keyboard_set_repeat_info(&self.group.keyboard, self.server.config.input.repeat_rate, self.server.config.input.repeat_delay);
         self.resolveBindings();
+        if (!self.modeExists(self.modeName())) self.setMode(DEFAULT_MODE);
+    }
+
+    pub fn modeName(self: *const Input) []const u8 {
+        return self.mode_buf[0..self.mode_len];
+    }
+
+    pub fn setMode(self: *Input, name_in: []const u8) void {
+        const name = std.mem.trim(u8, name_in, " \t");
+        const effective = if (name.len == 0) DEFAULT_MODE else name;
+        if (effective.len > self.mode_buf.len) {
+            log.warn("key mode name too long: '{s}'", .{effective});
+            return;
+        }
+        for (effective) |ch| {
+            if (!std.ascii.isAlphanumeric(ch) and ch != '_' and ch != '-') {
+                log.warn("invalid key mode name: '{s}'", .{effective});
+                return;
+            }
+        }
+        @memcpy(self.mode_buf[0..effective.len], effective);
+        self.mode_len = effective.len;
+        self.repeat_active = false;
+        if (self.repeat_timer) |t| _ = c.wl_event_source_timer_update(t, 0);
+        log.info("key mode: {s}", .{effective});
+    }
+
+    pub fn modeExists(self: *const Input, name: []const u8) bool {
+        if (std.mem.eql(u8, name, DEFAULT_MODE)) return true;
+        const cfg = &self.server.config;
+        for (cfg.bindings[0..cfg.binding_count]) |b| {
+            if (std.mem.eql(u8, b.mode, name)) return true;
+        }
+        return false;
     }
 
     fn resolveBindings(self: *Input) void {
@@ -211,6 +249,9 @@ pub const Input = struct {
             else => {},
         }
         c.wlr_seat_set_capabilities(self.server.seat, c.WL_SEAT_CAPABILITY_POINTER | c.WL_SEAT_CAPABILITY_KEYBOARD);
+        if (self.server.session_locked) {
+            if (self.server.session_lock) |sl| sl.updateKeyboardFocus();
+        }
     }
 
     fn applyLibinputConfig(self: *Input, device: *c.struct_wlr_input_device) void {
@@ -246,9 +287,36 @@ pub const Input = struct {
         self.updatePointerFocus(time_msec);
     }
 
+    pub fn resetPointerFocus(self: *Input) void {
+        if (self.last_pointer_surface != null) {
+            c.wlr_seat_pointer_notify_clear_focus(self.server.seat);
+            self.last_pointer_surface = null;
+            self.last_pointer_window = null;
+        }
+    }
+
     pub fn updatePointerFocus(self: *Input, time_msec: u32) void {
         const cx = self.server.cursor.x;
         const cy = self.server.cursor.y;
+
+        if (self.server.session_locked) {
+            if (self.server.session_lock) |sl| {
+                if (sl.pointerAt(cx, cy)) |hit| {
+                    if (self.last_pointer_surface != hit.surface) {
+                        c.wlr_seat_pointer_notify_enter(self.server.seat, hit.surface, hit.sx, hit.sy);
+                        self.last_pointer_surface = hit.surface;
+                        self.last_pointer_window = null;
+                        c.wlr_cursor_set_xcursor(self.server.cursor, self.server.cursor_manager, "default");
+                    } else {
+                        c.wlr_seat_pointer_notify_motion(self.server.seat, time_msec, hit.sx, hit.sy);
+                    }
+                    return;
+                }
+            }
+            self.resetPointerFocus();
+            return;
+        }
+
         const hit = self.hitTest(cx, cy);
 
         // Layer surfaces have priority over normal windows.
@@ -345,6 +413,12 @@ pub const Input = struct {
             return;
         }
 
+        if (self.server.session_locked) {
+            _ = c.wlr_seat_pointer_notify_button(self.server.seat, event.time_msec, event.button, event.state);
+            c.wlr_seat_pointer_notify_frame(self.server.seat);
+            return;
+        }
+
         const mods = self.currentModifiers();
         if (pressed) {
             if (self.findMouseBinding(mods, @intCast(event.button))) |binding| {
@@ -392,6 +466,11 @@ pub const Input = struct {
             c.WL_POINTER_AXIS_HORIZONTAL_SCROLL => if (event.delta < 0) .left else .right,
             else => null,
         };
+        if (self.server.session_locked) {
+            c.wlr_seat_pointer_notify_axis(self.server.seat, event.time_msec, event.orientation, event.delta, event.delta_discrete, event.source, event.relative_direction);
+            c.wlr_seat_pointer_notify_frame(self.server.seat);
+            return;
+        }
         if (dir) |d| {
             const cfg = &self.server.config;
             var i = cfg.axis_binding_count;
@@ -435,6 +514,8 @@ pub const Input = struct {
             const b = &cfg.bindings[i];
             if (b.on_release != on_release) continue;
             if (b.mods != mods) continue;
+            if (!std.mem.eql(u8, b.mode, self.modeName())) continue;
+            if (self.server.session_locked and !b.allow_locked) continue;
             if (!self.bindingMatches(i, b, keycode, syms, nsyms)) continue;
 
             if (!pressed) {
@@ -508,7 +589,7 @@ pub const Input = struct {
             const idx: usize = @intCast(self.repeat_code);
             if (idx < self.server.config.binding_count) {
                 const b = &self.server.config.bindings[idx];
-                if (b.allow_repeat) {
+                if (b.allow_repeat and std.mem.eql(u8, b.mode, self.modeName()) and (!self.server.session_locked or b.allow_locked)) {
                     self.server.dispatch(b.command, b.args);
                 } else {
                     self.repeat_active = false;

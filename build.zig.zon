@@ -1,6 +1,6 @@
 .{
     .name = .kairo,
-    .version = "0.1.0",
+    .version = "0.2.0",
     .fingerprint = 0x2c58b635962b46e2,
     .minimum_zig_version = "0.15.2",
     .dependencies = .{},
@@ -12,8 +12,15 @@
         "protocols",
         "docs",
         "examples",
+        "tests",
         "packaging",
         "README.md",
+        "ROADMAP.md",
+        "ARCHITECTURE.md",
+        "PERFORMANCE.md",
+        "CONTRIBUTING.md",
+        "CHANGELOG.md",
+        "benchmarks",
         "LICENSE",
     },
 }

@@ -41,6 +41,11 @@ jobs:
       - name: Build (software renderer)
         run: zig build -Dscenefx=false --prefix zig-out-plain
 
+      - name: Session lock integration
+        run: |
+          KAIRO_BIN=./zig-out-plain/bin/kairo WLR_RENDERER=pixman \
+            timeout 20 ./tests/session_lock.sh
+
       - name: Headless smoke test
         run: |
           set -euo pipefail

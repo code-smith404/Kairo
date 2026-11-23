@@ -119,6 +119,7 @@ pub const KeySpec = union(enum) {
 pub const Binding = struct {
     mods: u32 = 0,
     key: KeySpec,
+    mode: []const u8 = "default",
     command: Command = .none,
     args: []const u8 = "",
     on_release: bool = false,
@@ -322,6 +323,7 @@ pub const Config = struct {
     mods: u32 = 64, // WLR_MODIFIER_LOGO
     terminal: []const u8 = "foot",
     menu: []const u8 = "",
+    lock_command: []const u8 = "",
     tag_count: u32 = 9,
     default_layout: layout.Kind = .tile,
     master_count: u16 = 1,
@@ -446,6 +448,7 @@ pub const Config = struct {
         pass_through: bool = false,
         allow_repeat: bool = true,
         allow_locked: bool = false,
+        mode: []const u8 = "default",
         tag: ?u32 = null,
     };
 
@@ -461,6 +464,7 @@ pub const Config = struct {
         b.* = .{
             .mods = mods,
             .key = .{ .sym = try self.pool.dupe(key) },
+            .mode = try self.pool.dupe(flags.mode),
             .command = command,
             .args = try self.pool.dupe(args_storage),
             .on_release = flags.on_release,
@@ -471,12 +475,24 @@ pub const Config = struct {
         self.binding_count += 1;
     }
 
+    pub fn removeDefaultBindings(self: *Config) void {
+        var write: usize = 0;
+        for (self.bindings[0..self.binding_count]) |binding| {
+            if (!std.mem.eql(u8, binding.mode, "default")) {
+                self.bindings[write] = binding;
+                write += 1;
+            }
+        }
+        self.binding_count = write;
+    }
+
     pub fn addKeyCode(self: *Config, mods: u32, code: i32, command: Command, args: []const u8, flags: BindingFlags) !void {
         if (self.binding_count >= MAX_BINDINGS) return error.TooManyBindings;
         const b = &self.bindings[self.binding_count];
         b.* = .{
             .mods = mods,
             .key = .{ .code = code },
+            .mode = try self.pool.dupe(flags.mode),
             .command = command,
             .args = try self.pool.dupe(args),
             .on_release = flags.on_release,

@@ -29,6 +29,7 @@ names are left untouched.
 | `mod` | modifiers | `Super` | Modifier used by default bindings |
 | `terminal` | command | `foot` | Terminal used by integrations |
 | `menu` | command | empty | Application launcher command |
+| `lock_command` (alias `locker`) | command | empty | Client started by `toggle_session_lock`; must support `ext-session-lock-v1` |
 | `tag_count` | 1–32 | `9` | Number of selectable tags |
 | `default_layout` | layout name | `tile` | Initial layout for new tags |
 | `master_count` | 0–16 | `1` | Master windows for stacking layouts |
@@ -109,6 +110,21 @@ SceneFX entirely and can use wlroots' pixman renderer for headless testing.
 | `disable_while_typing` | bool | `true` |
 | `accel_speed` | −1..1 | `0.0` |
 
+## Session lock
+
+Kairo implements `ext-session-lock-v1`; it does not implement authentication.
+Set `lock_command` to a lock client such as `swaylock` and bind
+`toggle_session_lock`:
+
+```ini
+lock_command = swaylock -f
+bind = SUPER+ALT, L, toggle_session_lock
+```
+
+The lock client receives keyboard and pointer focus, creates one surface per
+output, and remains in control until it unlocks. Normal bindings, window focus
+and pointer hit testing are disabled while locked.
+
 ## Overview
 
 | Option | Type | Default | Description |
@@ -130,8 +146,33 @@ bindc = MODS, KEY, COMMAND[, ARGS]   # reserved for conflict-allowed bindings
 keycode written as `code:24`. Bindings are case-insensitive for named
 modifiers; keysym matching follows xkbcommon.
 
-Declaring the first `bind` clears the built-in bindings, so a configuration file
-is authoritative. Mouse and axis bindings behave the same way.
+Declaring the first default-mode `bind` clears the built-in default bindings, so
+a configuration file is authoritative. Bindings created in a custom mode are
+retained if they appear before the first default-mode binding.
+
+### Key modes
+
+`mode = NAME` assigns subsequent keyboard bindings to a named mode. A binding
+only matches while that mode is active. The default mode is `default`.
+
+```ini
+mode = resize
+bind = SUPER, H, set_master_factor, -0.05
+bind = SUPER, L, set_master_factor, +0.05
+bindl = SUPER, Escape, set_key_mode, default
+
+mode = default
+bind = SUPER, R, set_key_mode, resize
+```
+
+`set_key_mode` with no argument (or `default`) returns to the default mode. The
+active mode is reported by `kairoctl query` and the `session` IPC event. Bindings
+in the active mode must also match their modifiers and key; a mode with no
+matching binding lets the key reach the focused client.
+
+Normal bindings are disabled while a session lock is active. `bindl` marks a
+binding as allowed during a lock; use it only for safe actions such as changing
+the key mode or media keys.
 
 ```ini
 mousebind = SUPER, left, moveresize, curmove

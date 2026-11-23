@@ -48,10 +48,13 @@ tap_to_click = true
 natural_scroll = false
 focus_follows_mouse = false
 
+# Session lock. The client owns authentication; Kairo configures its surfaces.
+lock_command = swaylock -f
+
 # Overview.
 overview_gap = 16
 
-# Bindings. The first bind clears the built-in bindings.
+# Bindings. The first default-mode bind clears the built-in default bindings.
 bind = SUPER, Return, spawn, foot
 bind = SUPER, Q, killclient
 bind = SUPER+SHIFT, E, quit
@@ -76,6 +79,7 @@ bind = SUPER, comma, focus_monitor
 bind = SUPER, period, move_to_monitor
 bind = SUPER, C, center_window
 bind = SUPER, Z, zoom
+bind = SUPER+ALT, L, toggle_session_lock
 bind = SUPER, 1, view_tag, 1
 bind = SUPER, 2, view_tag, 2
 bind = SUPER, 3, view_tag, 3
@@ -102,6 +106,16 @@ rule = title:*Picture-in-Picture*, floating:true, no_border:true
 # Named scratchpad.
 scratchpad = name:term, command:foot, app_id:foot, width:1000, height:650
 bind = SUPER, N, toggle_named_scratchpad, term
+bind = SUPER+CTRL, R, set_key_mode, resize
+
+# Resize mode. Escape leaves the mode even while the session is locked.
+mode = resize
+bind = SUPER, H, set_master_factor, -0.05
+bind = SUPER, L, set_master_factor, +0.05
+bind = SUPER, bracketleft, set_master_factor, -0.05
+bind = SUPER, bracketright, set_master_factor, +0.05
+bindl = SUPER, Escape, set_key_mode, default
+mode = default
 
 # Autostart.
 exec = waybar

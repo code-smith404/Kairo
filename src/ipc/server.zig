@@ -19,6 +19,7 @@ pub const Event = enum {
     tag,
     output,
     layout,
+    session,
 
     pub fn name(self: Event) []const u8 {
         return @tagName(self);
@@ -405,6 +406,7 @@ pub const Ipc = struct {
                 .tag => writeTags(&w, self.server) catch continue,
                 .output => writeMonitors(&w, self.server) catch continue,
                 .layout => writeLayouts(&w) catch continue,
+                .session => writeSession(&w, self.server) catch continue,
             }
             w.endObject() catch continue;
             w.raw("\n") catch continue;
@@ -527,10 +529,21 @@ fn writeLayouts(w: *proto.Writer) !void {
     try w.endArray();
 }
 
+fn writeSession(w: *proto.Writer, server: *Server) !void {
+    try w.beginObject();
+    try w.key("locked");
+    try w.boolean(server.session_locked);
+    try w.key("key_mode");
+    try w.string(server.input.modeName());
+    try w.endObject();
+}
+
 fn writeQuery(w: *proto.Writer, server: *Server) !void {
     try w.beginObject();
     try w.key("version");
     try w.string(@import("build_options").version);
+    try w.key("session");
+    try writeSession(w, server);
     try w.key("focused_window");
     if (server.focused_window) |win| try w.uint(win.id) else try w.nullValue();
     try w.key("windows");

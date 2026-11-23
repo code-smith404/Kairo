@@ -23,7 +23,8 @@ const Parser = struct {
     allocator: std.mem.Allocator,
     vars: std.StringHashMap([]const u8),
     depth: u32 = 0,
-    saw_bind: bool = false,
+    current_mode: []const u8 = "default",
+    saw_default_bind: bool = false,
     saw_mousebind: bool = false,
     saw_axisbind: bool = false,
 
@@ -227,8 +228,13 @@ const Parser = struct {
             self.cfg.env_count += 1;
             return;
         }
-        if (std.mem.eql(u8, key, "key_mode")) {
-            self.addDiag(file, line, "key modes are not supported by this build", .{});
+        if (std.mem.eql(u8, key, "mode") or std.mem.eql(u8, key, "key_mode")) {
+            const name = std.mem.trim(u8, value, " \t");
+            if (!isModeName(name)) {
+                self.addDiag(file, line, "invalid key mode '{s}'", .{name});
+                return;
+            }
+            self.current_mode = self.cfg.pool.dupe(name) catch "default";
             return;
         }
 
@@ -239,6 +245,8 @@ const Parser = struct {
             self.cfg.terminal = self.cfg.pool.dupe(value) catch return;
         } else if (std.mem.eql(u8, key, "menu")) {
             self.cfg.menu = self.cfg.pool.dupe(value) catch return;
+        } else if (std.mem.eql(u8, key, "lock_command") or std.mem.eql(u8, key, "locker")) {
+            self.cfg.lock_command = self.cfg.pool.dupe(value) catch return;
         } else if (std.mem.eql(u8, key, "default_layout")) {
             self.cfg.default_layout = layout.Kind.fromName(value) orelse {
                 self.addDiag(file, line, "unknown layout '{s}'", .{value});
@@ -392,15 +400,16 @@ const Parser = struct {
             command = if (std.mem.indexOf(u8, args, "resize") != null) .mouse_resize else .mouse_move;
         }
         if (!validateCommandArgs(self, file, line, command, args)) return;
-        if (!self.saw_bind) {
-            self.cfg.binding_count = 0;
-            self.saw_bind = true;
+        if (!self.saw_default_bind and std.mem.eql(u8, self.current_mode, "default")) {
+            self.cfg.removeDefaultBindings();
+            self.saw_default_bind = true;
         }
         const flags = Config.BindingFlags{
             .on_release = std.mem.eql(u8, key, "bindr"),
             .pass_through = std.mem.eql(u8, key, "bindp"),
             .allow_repeat = !std.mem.eql(u8, key, "bindn"),
             .allow_locked = std.mem.eql(u8, key, "bindl"),
+            .mode = self.current_mode,
         };
         if (std.mem.startsWith(u8, key_s, "code:")) {
             const code = std.fmt.parseInt(i32, key_s[5..], 10) catch {
@@ -750,6 +759,12 @@ fn validateCommandArgs(parser: *Parser, file: []const u8, line: u32, command: co
                 return false;
             }
         },
+        .set_key_mode => {
+            if (trimmed.len != 0 and !isModeName(trimmed)) {
+                parser.addDiag(file, line, "invalid key mode '{s}'", .{trimmed});
+                return false;
+            }
+        },
         .set_master_factor => {
             if (trimmed.len == 0) return true;
             if (parseDeltaString(trimmed) == null and (std.fmt.parseFloat(f32, trimmed) catch null) == null) {
@@ -831,6 +846,14 @@ fn parseTransform(s: []const u8) ?u8 {
     if (std.ascii.eqlIgnoreCase(s, "flipped-180")) return 6;
     if (std.ascii.eqlIgnoreCase(s, "flipped-270")) return 7;
     return null;
+}
+
+fn isModeName(s: []const u8) bool {
+    if (s.len == 0 or s.len > 31) return false;
+    for (s) |ch| {
+        if (!std.ascii.isAlphanumeric(ch) and ch != '_' and ch != '-') return false;
+    }
+    return true;
 }
 
 pub fn parseMods(s_in: []const u8) ?u32 {
@@ -990,6 +1013,7 @@ test "parse basic configuration" {
     try std.testing.expectEqual(@as(i32, 10), cfg.gap);
     try std.testing.expect(!cfg.effects.blur_enabled);
     try std.testing.expectEqual(@as(usize, 4), cfg.binding_count);
+    try std.testing.expectEqualStrings("default", cfg.bindings[0].mode);
     try std.testing.expectEqual(@as(usize, 1), cfg.mouse_binding_count);
     try std.testing.expectEqual(@as(usize, 1), cfg.axis_binding_count);
     try std.testing.expectEqual(@as(usize, 1), cfg.rule_count);
@@ -1018,4 +1042,39 @@ test "tag mask parsing" {
 test "comment stripping respects quoted shell commands" {
     try std.testing.expectEqualStrings("bind = SUPER, Q, spawn, sh -c 'echo #hi'", stripComment("bind = SUPER, Q, spawn, sh -c 'echo #hi' # comment"));
     try std.testing.expectEqualStrings("gaps = 5", stripComment("gaps = 5 # comment"));
+}
+
+test "key mode sections scope bindings" {
+    const allocator = std.testing.allocator;
+    const text =
+        \\mode = resize
+        \\bind = SUPER, H, set_master_factor, -0.05
+        \\bindl = SUPER, Escape, set_key_mode, default
+        \\mode = default
+        \\bind = SUPER, Return, spawn, foot
+    ;
+    var cfg = try loadText(allocator, text, "modes.conf");
+    defer cfg.deinit(allocator);
+    try std.testing.expectEqual(@as(usize, 0), cfg.diag_count);
+    try std.testing.expectEqual(@as(usize, 3), cfg.binding_count);
+    try std.testing.expectEqualStrings("resize", cfg.bindings[0].mode);
+    try std.testing.expectEqualStrings("resize", cfg.bindings[1].mode);
+    try std.testing.expect(cfg.bindings[1].allow_locked);
+    try std.testing.expectEqualStrings("default", cfg.bindings[2].mode);
+}
+
+test "invalid key mode is rejected" {
+    const allocator = std.testing.allocator;
+    var cfg = try loadText(allocator, "mode = bad mode\n", "badmode.conf");
+    defer cfg.deinit(allocator);
+    try std.testing.expectEqual(@as(usize, 1), cfg.diag_count);
+    try std.testing.expect(std.mem.indexOf(u8, cfg.diags[0].message, "invalid key mode") != null);
+}
+
+test "lock command is parsed" {
+    const allocator = std.testing.allocator;
+    var cfg = try loadText(allocator, "lock_command = swaylock -f\n", "lock.conf");
+    defer cfg.deinit(allocator);
+    try std.testing.expectEqual(@as(usize, 0), cfg.diag_count);
+    try std.testing.expectEqualStrings("swaylock -f", cfg.lock_command);
 }

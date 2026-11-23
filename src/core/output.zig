@@ -275,6 +275,9 @@ pub const Output = struct {
         }
         self.outputBox();
         self.arrange();
+        if (self.server.session_locked) {
+            if (self.server.session_lock) |sl| sl.refreshOutputs();
+        }
     }
 
     fn handleDestroy(listener: [*c]c.struct_wl_listener, data: ?*anyopaque) callconv(.c) void {
