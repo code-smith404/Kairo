@@ -1,0 +1,92 @@
+//! Bindings for a plain-wlroots build (no SceneFX). Effects that require
+//! SceneFX are disabled at compile time; the compositor remains functional.
+
+pub const c = @cImport({
+    @cDefine("WLR_USE_UNSTABLE", "1");
+    @cDefine("_GNU_SOURCE", "1");
+
+    @cInclude("stdlib.h");
+    @cInclude("unistd.h");
+    @cInclude("time.h");
+    @cInclude("signal.h");
+    @cInclude("fcntl.h");
+    @cInclude("sys/socket.h");
+    @cInclude("sys/wait.h");
+    @cInclude("sys/un.h");
+    @cInclude("errno.h");
+    @cInclude("wlr/backend/libinput.h");
+    @cInclude("wayland-server.h");
+    @cInclude("wayland-server-core.h");
+    @cInclude("xkbcommon/xkbcommon.h");
+    @cInclude("linux/input-event-codes.h");
+    @cInclude("drm_fourcc.h");
+
+    @cInclude("wlr/backend.h");
+    @cInclude("wlr/backend/headless.h");
+    @cInclude("wlr/backend/multi.h");
+    @cInclude("wlr/backend/libinput.h");
+    @cInclude("wlr/backend/session.h");
+    @cInclude("wlr/render/wlr_renderer.h");
+    @cInclude("wlr/render/allocator.h");
+    @cInclude("wlr/render/pass.h");
+    @cInclude("wlr/render/wlr_texture.h");
+    @cInclude("wlr/render/drm_format_set.h");
+    @cInclude("wlr/interfaces/wlr_keyboard.h");
+    @cInclude("wlr/interfaces/wlr_output.h");
+    @cInclude("wlr/interfaces/wlr_buffer.h");
+    @cInclude("wlr/util/box.h");
+    @cInclude("wlr/util/edges.h");
+    @cInclude("wlr/util/log.h");
+    @cInclude("wlr/util/region.h");
+
+    @cInclude("wlr/types/wlr_output.h");
+    @cInclude("wlr/types/wlr_output_layout.h");
+    @cInclude("wlr/types/wlr_output_management_v1.h");
+    @cInclude("wlr/types/wlr_xdg_output_v1.h");
+    @cInclude("wlr/types/wlr_compositor.h");
+    @cInclude("wlr/types/wlr_subcompositor.h");
+    @cInclude("wlr/types/wlr_xdg_shell.h");
+    @cInclude("wlr/types/wlr_layer_shell_v1.h");
+    @cInclude("wlr/types/wlr_seat.h");
+    @cInclude("wlr/types/wlr_cursor.h");
+    @cInclude("wlr/types/wlr_xcursor_manager.h");
+    @cInclude("wlr/types/wlr_keyboard.h");
+    @cInclude("wlr/types/wlr_keyboard_group.h");
+    @cInclude("wlr/types/wlr_pointer.h");
+    @cInclude("wlr/types/wlr_touch.h");
+    @cInclude("wlr/types/wlr_data_device.h");
+    @cInclude("wlr/types/wlr_data_control_v1.h");
+    @cInclude("wlr/types/wlr_primary_selection.h");
+    @cInclude("wlr/types/wlr_primary_selection_v1.h");
+    @cInclude("wlr/types/wlr_pointer_constraints_v1.h");
+    @cInclude("wlr/types/wlr_relative_pointer_v1.h");
+    @cInclude("wlr/types/wlr_pointer_gestures_v1.h");
+    @cInclude("wlr/types/wlr_cursor_shape_v1.h");
+    @cInclude("wlr/types/wlr_presentation_time.h");
+    @cInclude("wlr/types/wlr_idle_notify_v1.h");
+    @cInclude("wlr/types/wlr_idle_inhibit_v1.h");
+    @cInclude("wlr/types/wlr_session_lock_v1.h");
+    @cInclude("wlr/types/wlr_foreign_toplevel_management_v1.h");
+    @cInclude("wlr/types/wlr_input_method_v2.h");
+    @cInclude("wlr/types/wlr_text_input_v3.h");
+    @cInclude("wlr/types/wlr_fractional_scale_v1.h");
+    @cInclude("wlr/types/wlr_viewporter.h");
+    @cInclude("wlr/types/wlr_linux_dmabuf_v1.h");
+    @cInclude("wlr/types/wlr_linux_drm_syncobj_v1.h");
+    @cInclude("wlr/types/wlr_xdg_activation_v1.h");
+    @cInclude("wlr/types/wlr_xdg_decoration_v1.h");
+    @cInclude("wlr/types/wlr_server_decoration.h");
+    @cInclude("wlr/types/wlr_single_pixel_buffer_v1.h");
+    @cInclude("wlr/types/wlr_alpha_modifier_v1.h");
+    @cInclude("wlr/types/wlr_screencopy_v1.h");
+    @cInclude("wlr/types/wlr_buffer.h");
+    @cInclude("wlr/types/wlr_drm.h");
+    @cInclude("wlr/types/wlr_shm.h");
+    @cInclude("wlr/types/wlr_fixes.h");
+    @cInclude("wlr/types/wlr_gamma_control_v1.h");
+
+    @cInclude("wlr/xwayland/xwayland.h");
+    @cInclude("wlr/xwayland/shell.h");
+
+    @cInclude("wlr/types/wlr_scene.h");
+});

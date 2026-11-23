@@ -1,0 +1,107 @@
+# Kairo example configuration.
+# Copy to ~/.config/kairo/config and adjust to taste.
+
+mod = Super
+terminal = foot
+
+# Tags and layouts.
+tag_count = 9
+default_layout = tile
+master_count = 1
+master_factor = 0.55
+
+# Gaps and borders.
+gaps = 8
+inner_gaps = 4
+border_width = 2
+border_color_focused = #4c7899
+border_color_unfocused = #333333
+background = #0f1014
+
+# Animations.
+animations = true
+animation_duration = 180
+animation_easing = ease_out_cubic
+animation_fade = true
+
+# SceneFX effects. Set blur/shadow to false on GPUs without SceneFX support.
+blur = true
+blur_radius = 6
+blur_passes = 3
+blur_noise = 0.0
+blur_brightness = 0.9
+blur_contrast = 1.0
+blur_saturation = 1.1
+shadow = true
+shadow_blur = 12
+shadow_offset_y = 6
+shadow_color = #0000008c
+corner_radius = 8
+focused_opacity = 1.0
+unfocused_opacity = 1.0
+
+# Input.
+keyboard_layout = us
+repeat_rate = 25
+repeat_delay = 600
+tap_to_click = true
+natural_scroll = false
+focus_follows_mouse = false
+
+# Overview.
+overview_gap = 16
+
+# Bindings. The first bind clears the built-in bindings.
+bind = SUPER, Return, spawn, foot
+bind = SUPER, Q, killclient
+bind = SUPER+SHIFT, E, quit
+bind = SUPER, R, reload
+bind = SUPER, F, toggle_floating
+bind = SUPER, M, toggle_fullscreen
+bind = SUPER+SHIFT, M, toggle_maximized
+bind = SUPER, Space, cycle_layout
+bind = SUPER, Tab, switcher_next
+bind = SUPER+SHIFT, Tab, switcher_prev
+bind = SUPER, J, focus_next
+bind = SUPER, K, focus_prev
+bind = SUPER+SHIFT, J, swap_next
+bind = SUPER+SHIFT, K, swap_prev
+bind = SUPER, H, focus_left
+bind = SUPER, L, focus_right
+bind = SUPER+SHIFT, H, move_left
+bind = SUPER+SHIFT, L, move_right
+bind = SUPER, grave, toggle_scratchpad
+bind = SUPER+SHIFT, Space, show_overview
+bind = SUPER, comma, focus_monitor
+bind = SUPER, period, move_to_monitor
+bind = SUPER, C, center_window
+bind = SUPER, Z, zoom
+bind = SUPER, 1, view_tag, 1
+bind = SUPER, 2, view_tag, 2
+bind = SUPER, 3, view_tag, 3
+bind = SUPER, 4, view_tag, 4
+bind = SUPER, 5, view_tag, 5
+bind = SUPER+SHIFT, 1, tag_window, 1
+bind = SUPER+SHIFT, 2, tag_window, 2
+bind = SUPER+SHIFT, 3, tag_window, 3
+bind = SUPER+CTRL, 1, toggle_tag, 1
+bind = SUPER+CTRL, 2, toggle_tag, 2
+bind = SUPER+CTRL, 3, toggle_tag, 3
+
+mousebind = SUPER, left, moveresize, curmove
+mousebind = SUPER, right, moveresize, curresize
+axisbind = SUPER, down, view_next_tag
+axisbind = SUPER, up, view_prev_tag
+
+# Window rules. Patterns are case-insensitive globs.
+rule = app_id:firefox, tags:2
+rule = app_id:pavucontrol, floating:true
+rule = app_id:mpv, floating:true, no_shadow:true
+rule = title:*Picture-in-Picture*, floating:true, no_border:true
+
+# Named scratchpad.
+scratchpad = name:term, command:foot, app_id:foot, width:1000, height:650
+bind = SUPER, N, toggle_named_scratchpad, term
+
+# Autostart.
+exec = waybar

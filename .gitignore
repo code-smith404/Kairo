@@ -1,0 +1,9 @@
+.zig-cache/
+.zig-cache
+zig-out/
+.direnv/
+.envrc
+*.o
+*.obj
+kairo
+kairoctl

@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm --needed base-devel git curl \
+            wlroots0.20 scenefx wayland wayland-protocols libxkbcommon \
+            pixman libdrm mesa xorg-xwayland
+
+      - uses: actions/checkout@v4
+
+      - name: Install Zig 0.15.2
+        run: |
+          curl -fsSL -o /opt/zig.tar.xz \
+            https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz
+          tar -C /opt -xf /opt/zig.tar.xz
+          ln -s /opt/zig-x86_64-linux-0.15.2/zig /usr/local/bin/zig
+          zig version
+
+      - name: Unit tests
+        run: zig build test
+
+      - name: Build (Debug)
+        run: zig build
+
+      - name: Build (ReleaseSafe)
+        run: zig build -Doptimize=ReleaseSafe
+
+      - name: Validate example config
+        run: ./zig-out/bin/kairo --validate-config -c examples/config
+
+      - name: Headless smoke test
+        run: |
+          XDG_RUNTIME_DIR=/tmp/kairo-runtime
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" ./zig-out/bin/kairo \
+            --headless --exit-after 1500 --log-level info

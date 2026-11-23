@@ -1,0 +1,19 @@
+.{
+    .name = .kairo,
+    .version = "0.1.0",
+    .fingerprint = 0x2c58b635962b46e2,
+    .minimum_zig_version = "0.15.2",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "cmd",
+        "protocols",
+        "docs",
+        "examples",
+        "packaging",
+        "README.md",
+        "LICENSE",
+    },
+}
