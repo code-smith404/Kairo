@@ -89,9 +89,18 @@ kairo -c ~/.config/kairo/config
 Useful testing flags:
 
 ```sh
-kairo --headless --exit-after 2000   # no DRM device required
+kairo --headless --exit-after 2000   # SceneFX build: needs a DRM/EGL device
 kairo --validate-config              # parse the config and report diagnostics
 kairo -c ./examples/config --log-level debug
+```
+
+For a headless run on a machine or CI container without `/dev/dri`, build the
+plain-wlroots software renderer. The default SceneFX build deliberately links
+SceneFX before wlroots, so it cannot fall back to pixman at runtime:
+
+```sh
+zig build -Dscenefx=false --prefix zig-out-plain
+WLR_RENDERER=pixman ./zig-out-plain/bin/kairo --headless --exit-after 2000
 ```
 
 The default configuration path is `${XDG_CONFIG_HOME:-$HOME/.config}/kairo/config`.

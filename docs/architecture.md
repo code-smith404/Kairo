@@ -112,5 +112,7 @@ then swaps it in and re-applies outputs, effects and keymaps.
 - `zig build` compiles the compositor, links it through the system C driver, and
   builds `kairoctl`.
 - `kairo --headless --exit-after N` exercises backend startup, output creation,
-  XWayland, scene rendering and teardown without a DRM device.
+  XWayland, scene rendering and teardown. The SceneFX build needs a DRM/EGL
+  device; the software-renderer build (`-Dscenefx=false` with
+  `WLR_RENDERER=pixman`) runs without one and is what CI uses.
 - `kairo --validate-config -c FILE` exercises config diagnostics.

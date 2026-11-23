@@ -89,7 +89,8 @@ Easings: `linear`, `ease_in_quad`, `ease_out_quad`, `ease_in_out_quad`,
 | `unfocused_opacity` | 0–1 | `1.0` | Unfocused window opacity |
 
 SceneFX is required for blur, shadows and rounded corners. Build with
-`-Dscenefx=false` to compile those features out.
+`-Dscenefx=false` to compile those features out; that build also avoids linking
+SceneFX entirely and can use wlroots' pixman renderer for headless testing.
 
 ## Input
 
