@@ -1,5 +1,8 @@
 # Kairo
 
+> **NOTICE:** This repository is **not** vibe-coded. It is written by
+> **[code_smith404](https://github.com/code-smith404) (a human)**, not by an AI.
+
 Kairo is a tiling Wayland compositor written in Zig, inspired by
 [MangoWM](https://github.com/mangowm/mango). It uses
 [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots) 0.20 as the backend and
