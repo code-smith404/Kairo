@@ -437,7 +437,12 @@ pub const Input = struct {
             if (b.mods != mods) continue;
             if (!self.bindingMatches(i, b, keycode, syms, nsyms)) continue;
 
-            if (pressed) {
+            if (!pressed) {
+                if (!b.pass_through) {
+                    self.server.dispatch(b.command, b.args);
+                    return;
+                }
+            } else {
                 if (self.repeat_active) {
                     self.repeat_active = false;
                     if (self.repeat_timer) |t| _ = c.wl_event_source_timer_update(t, 0);
