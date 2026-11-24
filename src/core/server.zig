@@ -304,6 +304,18 @@ pub const Server = struct {
         wl.remove(&self.seat.events.request_set_cursor, &self.request_set_cursor);
         wl.remove(&self.seat.events.request_set_selection, &self.request_set_selection);
         wl.remove(&self.seat.events.request_set_primary_selection, &self.request_set_primary_selection);
+        if (self.idle) |idle| {
+            self.idle = null;
+            idle.destroy();
+        }
+        if (self.idle_inhibit) |tracker| {
+            self.idle_inhibit = null;
+            // The manager dies with the display; stop tracking so the
+            // destroy handler cannot touch a freed tracker.
+            wl.remove(&tracker.manager.events.destroy, &tracker.listeners.destroy);
+            wl.remove(&tracker.manager.events.new_inhibitor, &tracker.listeners.new_inhibitor);
+            self.allocator.destroy(tracker);
+        }
         if (self.session_lock) |sl| {
             self.session_lock = null;
             sl.deinit();
