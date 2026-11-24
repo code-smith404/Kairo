@@ -81,7 +81,18 @@ install_from_release() {
         say "latest release: $tag"
     fi
 
-    tarball="$REPO_URL/releases/download/$tag/kairo-$tag-x86_64-linux.tar.gz"
+    # Resolve the real asset URL from the release API when we fetched its
+    # metadata (asset names may not embed the tag verbatim); fall back to
+    # constructing the conventional name for --version without a lookup.
+    tarball=""
+    if [ -s "$work/latest.json" ]; then
+        tarball=$(sed -n 's/.*"browser_download_url": *"\([^"]*x86_64-linux.tar.gz\)".*/\1/p' \
+            "$work/latest.json" | head -n 1)
+    fi
+    if [ -z "$tarball" ]; then
+        tarball="$REPO_URL/releases/download/$tag/kairo-$tag-x86_64-linux.tar.gz"
+        [ -n "$VERSION" ] || tarball="$REPO_URL/releases/download/$tag/kairo-${tag#v}-x86_64-linux.tar.gz"
+    fi
     say "downloading $tarball"
     fetch "$tarball" "$work/kairo.tar.gz" || fail "download failed; check that release $tag exists"
 
