@@ -25,9 +25,12 @@ headless integration smoke test, and its user-visible behavior is documented.
 - **0.5 — Notifications (done):** the org.freedesktop.Notifications daemon as
   a separate Wayland client over D-Bus, with toast rendering, action buttons,
   replace/expire semantics, do-not-disturb and a full D-Bus lifecycle test.
-- **0.6 — System services (next):** portal backend, clipboard history, MPRIS,
-  idle/inhibit actions, screen recording over PipeWire, settings and control
-  center.
+- **0.6 — Idle and inhibit (done):** compositor-side idle actions
+  (lock/suspend after a configurable timeout) with correct
+  idle-inhibit-unstable-v1 accounting; the previous no-op activity reporting
+  is gone.
+- **0.7 — System services (next):** portal backend, clipboard history, MPRIS,
+  screen recording over PipeWire, settings and control center.
 - **0.5 — Desktop integration:** settings application, lock screen client,
   theme/accent pipeline, application launcher search, session manager and
   display-manager integration.
@@ -112,6 +115,18 @@ headless integration smoke test, and its user-visible behavior is documented.
   cannot take down the session.
 - [x] Text-only toasts are a documented gap; capabilities advertise exactly
   `actions` and `body`.
+
+## 0.6 acceptance criteria
+
+- [x] `idle_timeout_ms`/`idle_lock`/`idle_suspend` config options with
+  validated parsing and documented behaviour.
+- [x] The idle check never re-locks an already locked session and is
+  postponed by `idle-inhibit-unstable-v1` clients.
+- [x] `notifyActivity` feeds both the protocol notifier (for clients) and the
+  compositor timer; the previous stub is gone.
+- [x] Inhibitor accounting is verified against the notifier state
+  (`wlr_idle_notifier_v1_set_inhibited`) and logs inhibitor counts.
+- [x] `zig build test` and all integration tests pass.
 
 ## 0.3 design constraints
 

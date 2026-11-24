@@ -51,6 +51,11 @@ focus_follows_mouse = false
 # Session lock. The client owns authentication; Kairo configures its surfaces.
 lock_command = swaylock -f
 
+# Idle session management. idle_timeout_ms = 0 disables; idle_lock locks with
+# lock_command on timeout, idle_suspend runs `systemctl suspend`.
+# idle_timeout_ms = 600000
+# idle_suspend = false
+
 # Overview.
 overview_gap = 16
 

@@ -11,6 +11,7 @@ const layout = @import("../layout/layout.zig");
 const effects = @import("../effects/effects.zig");
 const rules = @import("../window/rules.zig");
 const Output = @import("output.zig").Output;
+const idle_mod = @import("idle.zig");
 const Window = @import("window.zig").Window;
 const Config = @import("../config/config.zig").Config;
 const loader = @import("../config/loader.zig");
@@ -38,6 +39,8 @@ pub const Server = struct {
     xdg_shell: *c.struct_wlr_xdg_shell,
     layer_shell: *c.struct_wlr_layer_shell_v1,
     idle_notifier: ?*c.struct_wlr_idle_notifier_v1 = null,
+    idle: ?*idle_mod.Idle = null,
+    idle_inhibit: ?*idle_mod.InhibitTracker = null,
     output_manager: ?*c.struct_wlr_output_manager_v1 = null,
     config: Config,
     config_path: ?[]const u8 = null,
@@ -221,7 +224,9 @@ pub const Server = struct {
         _ = c.wlr_text_input_manager_v3_create(self.display);
         _ = c.wlr_input_method_manager_v2_create(self.display);
         self.idle_notifier = c.wlr_idle_notifier_v1_create(self.display);
-        _ = c.wlr_idle_inhibit_v1_create(self.display);
+        if (c.wlr_idle_inhibit_v1_create(self.display)) |manager| {
+            self.idle_inhibit = idle_mod.InhibitTracker.create(self, manager) catch null;
+        }
         _ = c.wlr_gamma_control_manager_v1_create(self.display);
 
         const dmabuf = c.wlr_linux_dmabuf_v1_create_with_renderer(self.display, 4, self.renderer);
@@ -328,6 +333,7 @@ pub const Server = struct {
             log.warn("IPC unavailable: {s}", .{@errorName(err)});
             break :blk null;
         };
+        idle_mod.Idle.create(self);
     }
 
     pub fn emitWindow(self: *Server) void {
@@ -601,7 +607,10 @@ pub const Server = struct {
     }
 
     pub fn notifyActivity(self: *Server) void {
-        _ = self;
+        if (self.idle_notifier) |notifier| {
+            c.wlr_idle_notifier_v1_notify_activity(notifier, self.seat);
+        }
+        if (self.idle) |idle| idle.notifyActivity();
     }
 
     fn updatePointerFocus(self: *Server) void {

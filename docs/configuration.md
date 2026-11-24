@@ -30,6 +30,9 @@ names are left untouched.
 | `terminal` | command | `foot` | Terminal used by integrations |
 | `menu` | command | empty | Application launcher command |
 | `lock_command` (alias `locker`) | command | empty | Client started by `toggle_session_lock`; must support `ext-session-lock-v1` |
+| `idle_timeout_ms` (alias `idle_timeout`) | int (ms) | `0` (off) | Session idle timeout; `0` disables idle actions |
+| `idle_lock` | bool | `true` | Lock the session through `lock_command` when the idle timeout fires |
+| `idle_suspend` | bool | `false` | Run `systemctl suspend` when the idle timeout fires |
 | `tag_count` | 1–32 | `9` | Number of selectable tags |
 | `default_layout` | layout name | `tile` | Initial layout for new tags |
 | `master_count` | 0–16 | `1` | Master windows for stacking layouts |
@@ -124,6 +127,22 @@ bind = SUPER+ALT, L, toggle_session_lock
 The lock client receives keyboard and pointer focus, creates one surface per
 output, and remains in control until it unlocks. Normal bindings, window focus
 and pointer hit testing are disabled while locked.
+
+## Idle actions
+
+With a timeout configured, the compositor arms a 1 s idle check fed by the
+same activity reporting that drives `ext-idle-notify-v1` clients:
+
+```ini
+idle_timeout_ms = 600000
+idle_lock = true
+idle_suspend = false
+```
+
+When the timeout fires the session locks (if `lock_command` is set) and/or
+suspends. `idle-lock` runs while a lock is already active are skipped, and
+clients that inhibit idle (video players using `idle-inhibit-unstable-v1`)
+postpone the timeout entirely. `idle_timeout_ms = 0` disables idle actions.
 
 ## Overview
 

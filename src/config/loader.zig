@@ -247,6 +247,21 @@ const Parser = struct {
             self.cfg.menu = self.cfg.pool.dupe(value) catch return;
         } else if (std.mem.eql(u8, key, "lock_command") or std.mem.eql(u8, key, "locker")) {
             self.cfg.lock_command = self.cfg.pool.dupe(value) catch return;
+        } else if (std.mem.eql(u8, key, "idle_timeout_ms") or std.mem.eql(u8, key, "idle_timeout")) {
+            self.cfg.idle_timeout_ms = std.fmt.parseInt(u32, value, 10) catch {
+                self.addDiag(file, line, "expected unsigned integer (milliseconds)", .{});
+                return;
+            };
+        } else if (std.mem.eql(u8, key, "idle_lock")) {
+            self.cfg.idle_lock = parseBool(value) orelse {
+                self.addDiag(file, line, "expected boolean", .{});
+                return;
+            };
+        } else if (std.mem.eql(u8, key, "idle_suspend")) {
+            self.cfg.idle_suspend = parseBool(value) orelse {
+                self.addDiag(file, line, "expected boolean", .{});
+                return;
+            };
         } else if (std.mem.eql(u8, key, "default_layout")) {
             self.cfg.default_layout = layout.Kind.fromName(value) orelse {
                 self.addDiag(file, line, "unknown layout '{s}'", .{value});

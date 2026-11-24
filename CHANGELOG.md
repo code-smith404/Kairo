@@ -21,6 +21,17 @@ the compositor is pre-1.0.
   and verifies the toast is composited with a screencopy grab.
 - Version 0.5.0.
 
+- **Idle actions**: `idle_timeout_ms`, `idle_lock` and `idle_suspend` arm a
+  compositor-side 1 s idle check driven by the same activity reporting as
+  `ext-idle-notify-v1`. The timeout locks the session (via `lock_command`)
+  and/or suspends; idle-inhibit clients postpone it, and an already-locked
+  session is never re-locked.
+- Idle inhibit accounting is now wired through: client inhibitors update the
+  compositor's idle state (previously `wlr_idle_inhibit_v1` was created but
+  never tracked, so inhibitors had no effect).
+- `Server.notifyActivity` actually reports activity to the notifier (it was
+  a stub).
+
 ### Documented gaps
 
 - Notification icons are not resolved (text-only toasts); only `actions` and
