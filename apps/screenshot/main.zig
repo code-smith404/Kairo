@@ -14,7 +14,7 @@ const c = @cImport({
     @cInclude("unistd.h");
 });
 
-const Version = "0.4.0";
+const Version = "0.5.0";
 
 const Capture = struct {
     display: *c.struct_wl_display,

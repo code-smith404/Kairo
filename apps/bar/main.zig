@@ -1613,7 +1613,7 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
     for (args[1..]) |arg| {
         if (std.mem.eql(u8, arg, "--version")) {
-            try std.fs.File.stdout().writeAll("kairo-bar 0.4.0\n");
+            try std.fs.File.stdout().writeAll("kairo-bar 0.5.0\n");
             return;
         }
         if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
