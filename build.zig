@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const version = "0.4.0";
+const version = "0.5.0";
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -88,6 +88,34 @@ pub fn build(b: *std.Build) void {
     bar_link.addArgs(&.{ "-lwayland-client", "-lcairo", "-lasound", "-lm", "-ldl", "-lpthread" });
     const install_bar = b.addInstallFileWithDir(bar_linked, .bin, "kairo-bar");
     b.getInstallStep().dependOn(&install_bar.step);
+
+    const notifications_mod = b.createModule(.{
+        .root_source_file = b.path("apps/notifications/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    notifications_mod.addIncludePath(b.path("protocols/generated/client"));
+    notifications_mod.addCSourceFile(.{
+        .file = b.path("protocols/generated/client/wlr-layer-shell-unstable-v1-protocol.c"),
+        .flags = &.{},
+    });
+    notifications_mod.addCSourceFile(.{
+        .file = b.path("protocols/generated/client/xdg-shell-protocol.c"),
+        .flags = &.{},
+    });
+    notifications_mod.linkSystemLibrary("wayland-client", .{ .needed = true });
+    notifications_mod.linkSystemLibrary("cairo", .{ .needed = true });
+    notifications_mod.linkSystemLibrary("dbus-1", .{ .needed = true });
+    notifications_mod.linkSystemLibrary("m", .{});
+    const notifications_obj = b.addObject(.{ .name = "kairo-notifications", .root_module = notifications_mod });
+    notifications_obj.bundle_compiler_rt = true;
+    const notifications_link = b.addSystemCommand(&.{ "cc", "-o" });
+    const notifications_linked = notifications_link.addOutputFileArg("kairo-notifications");
+    notifications_link.addFileArg(notifications_obj.getEmittedBin());
+    notifications_link.addArgs(&.{ "-lwayland-client", "-lcairo", "-ldbus-1", "-lm", "-ldl", "-lpthread" });
+    const install_notifications = b.addInstallFileWithDir(notifications_linked, .bin, "kairo-notifications");
+    b.getInstallStep().dependOn(&install_notifications.step);
 
     const screenshot_mod = b.createModule(.{
         .root_source_file = b.path("apps/screenshot/main.zig"),

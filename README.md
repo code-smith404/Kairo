@@ -30,6 +30,7 @@ beta software. The table below describes what is implemented today.
 | Overview | Live window grid overview (Super+Shift+Space) |
 | Bar | `kairo-bar` layer-shell panel: clickable tags, focused title, CPU/memory/temperature/battery/backlight/network/ALSA volume modules, clock |
 | Screenshots | `kairo-screenshot` full-output capture to PNG over wlr-screencopy |
+| Notifications | `kairo-notifications` org.freedesktop.Notifications daemon: layer-shell toasts, actions, replace/expire, do-not-disturb |
 | Launcher | Rofi 2.x (wayland build) with a matching `kairo.rasi` theme, bound to Super+D |
 | Session | `ext-session-lock-v1`, lock-aware input policy, configurable locker command |
 | Control | `kairoctl` JSON IPC, state queries, command dispatch, event subscription |
@@ -37,8 +38,9 @@ beta software. The table below describes what is implemented today.
 
 Not yet implemented: the graphical switcher overlay, `ext-background-effect-v1`
 client blur, region/window screenshot selection (full-output capture works),
-and per-output wallpaper management. These are documented as gaps; `kairoctl`
-and the bar report what they cannot do instead of pretending. Session locking is
+notification icons and persistent history, and per-output wallpaper
+management. These are documented as gaps; `kairoctl`, the bar and the
+notification daemon advertise exactly what they can do instead of pretending. Session locking is
 implemented by the compositor protocol; authentication and the lock-screen UI
 belong to the configured lock client. `kairoctl` and the config loader report
 unavailable features plainly instead of pretending they work.
@@ -63,6 +65,7 @@ Kairo targets **Zig 0.15.2** and needs the development headers for:
 - wlroots 0.20 (`wlroots0.20` on Arch)
 - SceneFX 0.5 (`scenefx`) — omitted with `-Dscenefx=false`
 - cairo and alsa-lib — used by `kairo-bar`
+- dbus — used by `kairo-notifications`
 - wayland-server, wayland-protocols
 - libxkbcommon, pixman, libdrm, Mesa/EGL, GBM
 - XWayland (optional at runtime, enabled by default)
@@ -88,6 +91,7 @@ Build output:
 - `zig-out/bin/kairoctl` — the control client
 - `zig-out/bin/kairo-bar` — the native status bar (layer-shell panel)
 - `zig-out/bin/kairo-screenshot` — screenshot client over wlr-screencopy
+- `zig-out/bin/kairo-notifications` — org.freedesktop.Notifications daemon
 
 Run the unit test suite with:
 

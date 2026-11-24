@@ -3,7 +3,7 @@
 Kairo is distributed three ways: prebuilt release tarballs, a curl-able online
 installer, and packages (currently Arch). All of them install the compositor
 (`kairo`), the control client (`kairoctl`) and the desktop shell
-(`kairo-bar`, `kairo-screenshot`).
+(`kairo-bar`, `kairo-screenshot`, `kairo-notifications`).
 
 ## One-line online install
 
@@ -32,6 +32,7 @@ POSIX-friendly:
 
 ```
 bin/kairo  bin/kairoctl  bin/kairo-bar  bin/kairo-screenshot
+bin/kairo-notifications
 wayland-sessions/kairo.desktop
 share/doc/kairo/{README.md,LICENSE,docs/*,examples/config,rofi/kairo.rasi}
 ```
@@ -99,6 +100,7 @@ renderer.
 
    ```ini
    exec_once = kairo-bar
+   exec_once = kairo-notifications
    ```
 
 4. Optional: install the Rofi launcher theme.
@@ -116,6 +118,7 @@ kairo --version
 kairoctl version      # needs a running compositor
 kairo-bar --version
 kairo-screenshot --version
+kairo-notifications --version
 ```
 
 All three binaries should report the same version.

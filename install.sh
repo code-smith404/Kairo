@@ -107,6 +107,9 @@ install_binaries() {
     if [ "$INSTALL_BAR" = 1 ] && [ -x "$src/bin/kairo-screenshot" ]; then
         install -m 755 "$src/bin/kairo-screenshot" "$bin_dir/kairo-screenshot"
     fi
+    if [ "$INSTALL_BAR" = 1 ] && [ -x "$src/bin/kairo-notifications" ]; then
+        install -m 755 "$src/bin/kairo-notifications" "$bin_dir/kairo-notifications"
+    fi
 
     # Session entry so display managers list Kairo.
     if [ -f "$src/wayland-sessions/kairo.desktop" ]; then
@@ -127,7 +130,7 @@ install_binaries() {
         say "installed to $bin_dir without root: make sure $bin_dir is in PATH"
     fi
     bar_note=""
-    if [ "$INSTALL_BAR" = 1 ]; then bar_note=", kairo-bar, kairo-screenshot"; fi
+    if [ "$INSTALL_BAR" = 1 ]; then bar_note=", kairo-bar, kairo-screenshot, kairo-notifications"; fi
     say "binaries installed: kairo, kairoctl$bar_note"
 }
 
@@ -162,3 +165,4 @@ say "next steps:"
 say "  1. copy the example config: mkdir -p ~/.config/kairo && cp $PREFIX/share/doc/kairo/examples/config ~/.config/kairo/"
 say "  2. log into a Kairo session from your display manager, or run 'kairo' from a TTY"
 say "  3. start the bar in a session autostart entry: kairo-bar &"
+say "     add notifications with: exec_once = kairo-notifications"

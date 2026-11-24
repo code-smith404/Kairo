@@ -3,6 +3,30 @@
 All notable changes are recorded here. Kairo follows semantic versioning while
 the compositor is pre-1.0.
 
+## [0.5.0] - 2026-11-24
+
+### Added
+
+- **Kairo Notifications** (`kairo-notifications`): the session's
+  `org.freedesktop.Notifications` daemon, implemented as an ordinary Wayland
+  client over a private D-Bus session. It owns the name, renders toasts on a
+  layer-shell overlay (top-right, urgency accent, wrap-limited body text),
+  queues and replaces notifications, honours `expire_timeout` including the
+  sticky case, supports action buttons invoked by pointer click with
+  `ActionInvoked`/`NotificationClosed` signals, and answers
+  `GetCapabilities`/`GetServerInformation`/`Introspect`.
+- Do-not-disturb: `dnd = true` in `~/.config/kairo/notifications.conf`
+  suppresses everything except critical urgency.
+- `tests/notifications.sh` drives the full lifecycle on a private session bus
+  and verifies the toast is composited with a screencopy grab.
+- Version 0.5.0.
+
+### Documented gaps
+
+- Notification icons are not resolved (text-only toasts); only `actions` and
+  `body` are advertised capabilities.
+- Persistent history and per-app settings are not implemented yet.
+
 ## [0.4.0] - 2026-11-24
 
 ### Added

@@ -22,9 +22,12 @@ headless integration smoke test, and its user-visible behavior is documented.
   volume), GTK color-scheme detection, `~/.config/kairo/bar.conf`
   configuration, and `kairo-screenshot` full-output PNG capture. Rofi 2.x is
   the launcher with a matching theme and default binding.
-- **0.5 — System services (next):** notification daemon (org.freedesktop.
-  Notifications over D-Bus), portal backend, clipboard history, MPRIS,
-  idle/inhibit actions, screen recording over PipeWire.
+- **0.5 — Notifications (done):** the org.freedesktop.Notifications daemon as
+  a separate Wayland client over D-Bus, with toast rendering, action buttons,
+  replace/expire semantics, do-not-disturb and a full D-Bus lifecycle test.
+- **0.6 — System services (next):** portal backend, clipboard history, MPRIS,
+  idle/inhibit actions, screen recording over PipeWire, settings and control
+  center.
 - **0.5 — Desktop integration:** settings application, lock screen client,
   theme/accent pipeline, application launcher search, session manager and
   display-manager integration.
@@ -92,6 +95,23 @@ headless integration smoke test, and its user-visible behavior is documented.
   (zlib-decoded raw size must match exactly).
 - [x] Rofi 2.x wayland theme (`packaging/rofi/kairo.rasi`), Super+D binding
   in the example config, packaged and documented.
+
+## 0.5 acceptance criteria
+
+- [x] `kairo-notifications` owns `org.freedesktop.Notifications` on the
+  session bus and answers GetServerInformation/GetCapabilities/Introspect.
+- [x] Notify returns a nonzero id; replaces_id replaces content; expire
+  timeouts expire; timeout 0 sticks until closed; CloseNotification closes.
+- [x] NotificationClosed and ActionInvoked signals are emitted with the spec
+  reasons (1 expired, 2 dismissed, 3 closed by user).
+- [x] Toasts render on a layer-shell overlay with an urgency accent, wrapped
+  body text and a clickable action button; verified composited via screencopy
+  (`tests/notifications.sh`).
+- [x] Do-not-disturb hides everything except critical urgency.
+- [x] The daemon is an ordinary client: no compositor privileges, crash
+  cannot take down the session.
+- [x] Text-only toasts are a documented gap; capabilities advertise exactly
+  `actions` and `body`.
 
 ## 0.3 design constraints
 

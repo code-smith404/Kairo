@@ -14,7 +14,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm --needed base-devel git curl \
             wlroots0.20 scenefx wayland wayland-protocols libxkbcommon \
-            pixman libdrm mesa xorg-xwayland cairo alsa-lib
+            pixman libdrm mesa xorg-xwayland cairo alsa-lib dbus
 
       - uses: actions/checkout@v4
 
@@ -55,6 +55,11 @@ jobs:
         run: |
           KAIRO_BIN=./zig-out-plain/bin/kairo WLR_RENDERER=pixman \
             timeout 30 ./tests/screenshot.sh
+
+      - name: Notifications integration
+        run: |
+          KAIRO_BIN=./zig-out-plain/bin/kairo WLR_RENDERER=pixman \
+            timeout 60 ./tests/notifications.sh
 
       - name: Headless smoke test
         run: |
