@@ -13,11 +13,13 @@
 set -eu
 
 REPO_URL="https://github.com/code-smith404/Kairo"
+RAW_URL="https://raw.githubusercontent.com/code-smith404/Kairo/main/install.sh"
 REPO_API="https://api.github.com/repos/code-smith404/Kairo"
 PREFIX="/usr/local"
 VERSION=""
 FROM_SOURCE=0
 USER_INSTALL=0
+PREFIX_SET=0
 INSTALL_BAR=1
 INSTALL_SHELL=1
 
@@ -39,7 +41,7 @@ EOF
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --prefix) PREFIX="$2"; shift 2 ;;
+        --prefix) PREFIX="$2"; PREFIX_SET=1; shift 2 ;;
         --version) VERSION="$2"; shift 2 ;;
         --from-source) FROM_SOURCE=1; shift ;;
         --user) USER_INSTALL=1; shift ;;
@@ -55,6 +57,22 @@ fi
 
 say() { printf '[kairo-install] %s\n' "$*"; }
 fail() { printf '[kairo-install] ERROR: %s\n' "$*" >&2; exit 1; }
+
+# When piping the installer (curl ... | sh), sudo only covers the download
+# command, so the script itself often runs unprivileged while PREFIX points
+# at /usr/local. Fall back to a user-writable prefix instead of dying
+# halfway through, unless the user pinned --prefix explicitly.
+if ! [ "$(id -u)" = 0 ]; then
+    probe="$PREFIX/.kairo-write-probe.$$"
+    if ! mkdir -p "$PREFIX/bin" 2>/dev/null || ! (touch "$probe" 2>/dev/null && rm -f "$probe"); then
+        if [ "$PREFIX_SET" = 1 ]; then
+            fail "cannot write to $PREFIX; re-run with sudo or use --user"
+        fi
+        PREFIX="${HOME}/.local"
+        say "no write access to the default prefix; installing to $PREFIX instead"
+        say "(for a system-wide install run: curl -fsSL $RAW_URL | sudo sh)"
+    fi
+fi
 
 fetch() {
     # fetch URL DEST

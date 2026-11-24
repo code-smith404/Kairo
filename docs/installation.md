@@ -8,7 +8,8 @@ installer, and packages (currently Arch). All of them install the compositor
 ## One-line online install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/code-smith404/Kairo/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/code-smith404/Kairo/main/install.sh | sh   # installs to ~/.local if /usr/local is not writable
+curl -fsSL https://raw.githubusercontent.com/code-smith404/Kairo/main/install.sh | sudo sh   # system-wide install to /usr/local
 ```
 
 This downloads the latest release tarball from GitHub Releases and installs
