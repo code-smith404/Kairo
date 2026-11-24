@@ -9,8 +9,6 @@ Kairo is a tiling Wayland compositor written in Zig, inspired by
 [SceneFX](https://github.com/wlrfx/scenefx) 0.5 for blur, shadows and rounded
 corners.
 
-This project or repo is not vibe coded btw.
-
 Kairo is deliberately small: one event loop, one scene graph, a pure-Zig layout
 engine, and a JSON control socket. The compositor does not embed C beyond the
 wlroots/SceneFX/libwayland ABI.
