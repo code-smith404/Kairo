@@ -18,6 +18,7 @@ PREFIX="/usr/local"
 VERSION=""
 FROM_SOURCE=0
 USER_INSTALL=0
+INSTALL_BAR=1
 INSTALL_SHELL=1
 
 print_usage() {

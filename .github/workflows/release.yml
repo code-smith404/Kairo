@@ -30,10 +30,10 @@ jobs:
           zig version
 
       - name: Build (ReleaseSafe, SceneFX)
-        run: zig build -Doptimize=ReleaseSafe
+        run: zig build -Doptimize=ReleaseSafe -Dcpu=baseline
 
       - name: Build (ReleaseSafe, software renderer)
-        run: zig build -Doptimize=ReleaseSafe -Dscenefx=false --prefix zig-out-plain
+        run: zig build -Doptimize=ReleaseSafe -Dcpu=baseline -Dscenefx=false --prefix zig-out-plain
 
       - name: Smoke test
         run: |
