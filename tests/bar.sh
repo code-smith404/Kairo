@@ -1,9 +1,12 @@
 #!/bin/sh
-# End-to-end kairo-shell test against a real Kairo instance.
+# End-to-end kairo-bar test against a real Kairo instance.
+#
+# Verifies that the bar maps, subscribes to IPC, reflects a tag switch and is
+# actually composited (checked through a screencopy grab).
 #
 # Usage:
-#   ./tests/shell.sh
-#   KAIRO_BIN=./zig-out-plain/bin/kairo WLR_RENDERER=pixman ./tests/shell.sh
+#   ./tests/bar.sh
+#   KAIRO_BIN=./zig-out-plain/bin/kairo WLR_RENDERER=pixman ./tests/bar.sh
 #
 # Verifies that the shell panel maps, subscribes to IPC, reflects a tag switch
 # and is actually composited on screen (checked through a screencopy grab).
@@ -11,19 +14,19 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 bin=${KAIRO_BIN:-"$root/zig-out/bin/kairo"}
-shell=${KAIRO_SHELL:-"$root/zig-out/bin/kairo-shell"}
+bar=${KAIRO_BAR:-"$root/zig-out/bin/kairo-bar"}
 ctl=${KAIROCTL:-"$root/zig-out/bin/kairoctl"}
 shot_xml="$root/protocols/wlr-screencopy-unstable-v1.xml"
 shot_c="$root/tests/screencopy_shot.c"
-tmp=$(mktemp -d /tmp/kairo-shell-test.XXXXXX)
+tmp=$(mktemp -d /tmp/kairo-bar-test.XXXXXX)
 runtime="$tmp/runtime"
 kairo_pid=
-shell_pid=
+bar_pid=
 
 cleanup() {
-    if [ -n "${shell_pid:-}" ]; then kill "$shell_pid" 2>/dev/null || true; fi
+    if [ -n "${bar_pid:-}" ]; then kill "$bar_pid" 2>/dev/null || true; fi
     if [ -n "${kairo_pid:-}" ]; then kill "$kairo_pid" 2>/dev/null || true; fi
-    if [ -n "${shell_pid:-}" ]; then wait "$shell_pid" 2>/dev/null || true; fi
+    if [ -n "${bar_pid:-}" ]; then wait "$bar_pid" 2>/dev/null || true; fi
     if [ -n "${kairo_pid:-}" ]; then wait "$kairo_pid" 2>/dev/null || true; fi
     rm -rf "$tmp"
 }
@@ -61,16 +64,16 @@ if [ -z "$display" ]; then
     exit 1
 fi
 
-XDG_RUNTIME_DIR="$runtime" WAYLAND_DISPLAY="$display" "$shell" \
+XDG_RUNTIME_DIR="$runtime" WAYLAND_DISPLAY="$display" "$bar" \
     >"$tmp/shell.out" 2>"$tmp/shell.err" &
-shell_pid=$!
+bar_pid=$!
 
 for _ in $(seq 1 100); do
-    grep -q "kairo-shell: panel ready" "$tmp/shell.err" 2>/dev/null && break
+    grep -q "kairo-bar: bar ready" "$tmp/shell.err" 2>/dev/null && break
     sleep 0.05
 done
-if ! grep -q "kairo-shell: panel ready" "$tmp/shell.err"; then
-    echo "kairo-shell did not start" >&2
+if ! grep -q "kairo-bar: bar ready" "$tmp/shell.err"; then
+    echo "kairo-bar did not start" >&2
     cat "$tmp/shell.err" >&2
     cat "$tmp/kairo.log" >&2
     exit 1
@@ -123,14 +126,24 @@ r, g, b = px(11, 9)
 if not (20 <= r < 45 and 28 <= g < 55 and 45 <= b < 70):
     sys.exit(f"inactive tag button color unexpected: {(r, g, b)}")
 
+# The right half carries the status modules; there must be lit text there.
+lit_right = sum(
+    1
+    for x in range(w - 700, w - 20, 2)
+    for y in (11, 15, 19)
+    if px(x, y)[1] > 120
+)
+if lit_right < 20:
+    sys.exit(f"status modules not rendered on the right side ({lit_right} lit pixels)")
+
 print("panel composition: ok")
 PYEOF
 
-if ! wait "$shell_pid"; then
-    echo "kairo-shell exited with an error" >&2
+if ! wait "$bar_pid"; then
+    echo "kairo-bar exited with an error" >&2
     cat "$tmp/shell.err" >&2
     exit 1
 fi
-shell_pid=
+bar_pid=
 
-echo "kairo-shell integration: ok"
+echo "kairo-bar integration: ok"

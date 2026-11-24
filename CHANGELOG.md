@@ -3,6 +3,41 @@
 All notable changes are recorded here. Kairo follows semantic versioning while
 the compositor is pre-1.0.
 
+## [0.4.0] - 2026-11-24
+
+### Added
+
+- **Kairo Bar** (`kairo-bar`, replacing the `kairo-shell` panel): a native
+  layer-shell status bar with clickable tag buttons, the focused window title
+  and system modules — CPU, memory, temperature, battery, backlight, network
+  (with Wi-Fi link quality), ALSA playback volume and the clock.
+- Bar interactions: tag click/scroll dispatch through IPC; volume click mutes,
+  scroll steps; backlight click brightens, scroll steps — all straight through
+  sysfs/ALSA, no subprocesses.
+- Bar configuration in `~/.config/kairo/bar.conf`: module list, colors and
+  action steps, with a documented fallback palette.
+- GTK color-scheme detection: the bar adopts the user's dark/light GTK
+  preference on first start instead of imposing one.
+- `kairo-screenshot`: full-output screenshots over wlr-screencopy, written as
+  a valid PNG (deflate-stored stream, since Zig 0.15.2's flate encoder is
+  incomplete); the written path is printed on stdout.
+- Rofi 2.x launcher integration: a matching `kairo.rasi` theme in
+  `packaging/rofi/`, a Super+D binding in the example config, and an
+  `optdepends` in the Arch package. Rofi keeps its own configuration.
+- Integration tests: `tests/bar.sh` verifies the composited bar with real
+  screencopy pixels; `tests/screenshot.sh` verifies the PNG decodes to the
+  exact expected raw size.
+
+### Changed
+
+- The shell binary is renamed to `kairo-bar`; the launcher/OSD/notification
+  surfaces will be separate binaries in later milestones.
+- `examples/config` autostarts `kairo-bar` (was `waybar`) and adds screenshot
+  and launcher bindings (Print, Super+D).
+- The release tarball and Arch package carry `kairo-bar` and
+  `kairo-screenshot` and install the Rofi theme.
+- Version 0.4.0.
+
 ## [0.3.0] - 2026-11-24
 
 ### Added

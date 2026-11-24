@@ -5,7 +5,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/code-smith404/Kairo/main/install.sh | sh
 #
 # Or download and run with options:
-#   sh install.sh [--prefix DIR] [--version TAG] [--from-source] [--no-shell] [--user]
+#   sh install.sh [--prefix DIR] [--version TAG] [--from-source] [--no-bar] [--user]
 #
 # By default the script downloads the latest GitHub release tarball and installs
 # it under /usr/local. Pass --from-source to build from the git repository
@@ -31,7 +31,7 @@ Options:
   --version TAG     Install a specific release tag, e.g. v0.3.0
   --from-source     Clone and build instead of downloading a release
   --user            Shortcut: --prefix \$HOME/.local
-  --no-shell        Skip kairo-shell
+  --no-bar          Skip kairo-bar and kairo-screenshot
   -h, --help        Show this help
 EOF
 }
@@ -42,7 +42,7 @@ while [ $# -gt 0 ]; do
         --version) VERSION="$2"; shift 2 ;;
         --from-source) FROM_SOURCE=1; shift ;;
         --user) USER_INSTALL=1; shift ;;
-        --no-shell) INSTALL_SHELL=0; shift ;;
+        --no-bar) INSTALL_BAR=0; shift ;;
         -h|--help) print_usage; exit 0 ;;
         *) echo "unknown option: $1" >&2; print_usage >&2; exit 2 ;;
     esac
@@ -101,8 +101,11 @@ install_binaries() {
     mkdir -p "$bin_dir"
     install -m 755 "$src/bin/kairo" "$bin_dir/kairo"
     install -m 755 "$src/bin/kairoctl" "$bin_dir/kairoctl"
-    if [ "$INSTALL_SHELL" = 1 ] && [ -x "$src/bin/kairo-shell" ]; then
-        install -m 755 "$src/bin/kairo-shell" "$bin_dir/kairo-shell"
+    if [ "$INSTALL_BAR" = 1 ] && [ -x "$src/bin/kairo-bar" ]; then
+        install -m 755 "$src/bin/kairo-bar" "$bin_dir/kairo-bar"
+    fi
+    if [ "$INSTALL_BAR" = 1 ] && [ -x "$src/bin/kairo-screenshot" ]; then
+        install -m 755 "$src/bin/kairo-screenshot" "$bin_dir/kairo-screenshot"
     fi
 
     # Session entry so display managers list Kairo.
@@ -123,7 +126,9 @@ install_binaries() {
     if ! [ -w "$bin_dir" ]; then
         say "installed to $bin_dir without root: make sure $bin_dir is in PATH"
     fi
-    say "binaries installed: kairo, kairoctl$( [ "$INSTALL_SHELL" = 1 ] && echo ', kairo-shell' )"
+    bar_note=""
+    if [ "$INSTALL_BAR" = 1 ]; then bar_note=", kairo-bar, kairo-screenshot"; fi
+    say "binaries installed: kairo, kairoctl$bar_note"
 }
 
 install_from_source() {
@@ -156,4 +161,4 @@ esac
 say "next steps:"
 say "  1. copy the example config: mkdir -p ~/.config/kairo && cp $PREFIX/share/doc/kairo/examples/config ~/.config/kairo/"
 say "  2. log into a Kairo session from your display manager, or run 'kairo' from a TTY"
-say "  3. start the panel in a session autostart entry: kairo-shell &"
+say "  3. start the bar in a session autostart entry: kairo-bar &"

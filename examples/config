@@ -106,6 +106,9 @@ rule = title:*Picture-in-Picture*, floating:true, no_border:true
 # Named scratchpad.
 scratchpad = name:term, command:foot, app_id:foot, width:1000, height:650
 bind = SUPER, N, toggle_named_scratchpad, term
+# Launcher (Rofi 2.x, wayland build) and screenshot.
+bind = SUPER, D, spawn, rofi -show drun -theme kairo
+bind = , Print, spawn, kairo-screenshot
 bind = SUPER+CTRL, R, set_key_mode, resize
 
 # Resize mode. Escape leaves the mode even while the session is locked.
@@ -117,5 +120,5 @@ bind = SUPER, bracketright, set_master_factor, +0.05
 bindl = SUPER, Escape, set_key_mode, default
 mode = default
 
-# Autostart.
-exec = waybar
+# Autostart. kairo-bar is the native status bar.
+exec = kairo-bar

@@ -269,7 +269,7 @@ command is spawned on first use; toggling hides and shows the matching window.
 ## Autostart and environment
 
 ```ini
-exec = waybar
+exec = kairo-bar
 exec_once = kdeconnect-indicator
 env = MOZ_ENABLE_WAYLAND,1
 ```

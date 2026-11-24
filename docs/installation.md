@@ -3,7 +3,7 @@
 Kairo is distributed three ways: prebuilt release tarballs, a curl-able online
 installer, and packages (currently Arch). All of them install the compositor
 (`kairo`), the control client (`kairoctl`) and the desktop shell
-(`kairo-shell`).
+(`kairo-bar`, `kairo-screenshot`).
 
 ## One-line online install
 
@@ -21,7 +21,7 @@ into `/usr/local` (binaries in `/usr/local/bin`, the session file in
 | `--user` | shortcut for `--prefix $HOME/.local` |
 | `--version TAG` | install a specific release tag, e.g. `v0.3.0` |
 | `--from-source` | clone the repository and build instead of downloading |
-| `--no-shell` | skip `kairo-shell` |
+| `--no-bar` | skip `kairo-bar` and `kairo-screenshot` |
 
 ## Release tarballs
 
@@ -31,9 +31,9 @@ Every tagged release publishes `kairo-<version>-x86_64-linux.tar.gz` plus a
 POSIX-friendly:
 
 ```
-bin/kairo  bin/kairoctl  bin/kairo-shell
+bin/kairo  bin/kairoctl  bin/kairo-bar  bin/kairo-screenshot
 wayland-sessions/kairo.desktop
-share/doc/kairo/{README.md,LICENSE,docs/*,examples/config}
+share/doc/kairo/{README.md,LICENSE,docs/*,examples/config,rofi/kairo.rasi}
 ```
 
 Unpack anywhere and put `bin/` on your `PATH`; the session file can be copied
@@ -48,9 +48,9 @@ cd packaging/arch
 makepkg -si
 ```
 
-The package installs `kairo`, `kairoctl`, `kairo-shell`, the session file and
-the documentation. An AUR package is planned; the PKGBUILD in-tree is kept
-current.
+The package installs `kairo`, `kairoctl`, `kairo-bar`, `kairo-screenshot`, the
+session file, the Rofi theme and the documentation. An AUR package is planned;
+the PKGBUILD in-tree is kept current.
 
 ## From source
 
@@ -95,10 +95,18 @@ renderer.
    dbus-run-session -- kairo
    ```
 
-3. Autostart the panel from your config (see `docs/configuration.md`):
+3. Autostart the bar from your config (see `docs/configuration.md`):
 
    ```ini
-   exec_once = kairo-shell
+   exec_once = kairo-bar
+   ```
+
+4. Optional: install the Rofi launcher theme.
+
+   ```sh
+   mkdir -p ~/.config/rofi
+   cp /usr/share/doc/kairo/rofi/kairo.rasi ~/.config/rofi/
+   # Super+D opens the launcher (see examples/config).
    ```
 
 ## Verifying the installation
@@ -106,7 +114,8 @@ renderer.
 ```sh
 kairo --version
 kairoctl version      # needs a running compositor
-kairo-shell --version
+kairo-bar --version
+kairo-screenshot --version
 ```
 
 All three binaries should report the same version.

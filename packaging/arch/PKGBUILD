@@ -6,8 +6,9 @@ pkgdesc="MangoWM-inspired tiling Wayland compositor written in Zig"
 arch=('x86_64' 'aarch64')
 url="https://github.com/code-smith404/Kairo"
 license=('MIT')
-depends=('wlroots0.20' 'scenefx' 'wayland' 'libxkbcommon' 'pixman' 'libdrm' 'mesa' 'xorg-xwayland')
+depends=('wlroots0.20' 'scenefx' 'wayland' 'libxkbcommon' 'pixman' 'libdrm' 'mesa' 'xorg-xwayland' 'cairo' 'alsa-lib')
 makedepends=('git' 'zig' 'base-devel')
+optdepends=('rofi: application launcher (Super+D default config provided)')
 source=("git+${url}")
 sha256sums=('SKIP')
 
@@ -25,7 +26,9 @@ package() {
     cd "$srcdir/Kairo"
     install -Dm755 zig-out/bin/kairo "$pkgdir/usr/bin/kairo"
     install -Dm755 zig-out/bin/kairoctl "$pkgdir/usr/bin/kairoctl"
-    install -Dm755 zig-out/bin/kairo-shell "$pkgdir/usr/bin/kairo-shell"
+    install -Dm755 zig-out/bin/kairo-bar "$pkgdir/usr/bin/kairo-bar"
+    install -Dm755 zig-out/bin/kairo-screenshot "$pkgdir/usr/bin/kairo-screenshot"
+    install -Dm644 packaging/rofi/kairo.rasi "$pkgdir/usr/share/doc/kairo/rofi/kairo.rasi"
     install -Dm644 README.md "$pkgdir/usr/share/doc/kairo/README.md"
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/kairo/LICENSE"
     install -Dm644 examples/config "$pkgdir/usr/share/doc/kairo/examples/config"

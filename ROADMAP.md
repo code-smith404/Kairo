@@ -17,9 +17,14 @@ headless integration smoke test, and its user-visible behavior is documented.
   subscription events and clickable tag switching. Software-buffer rendering
   works on GPU-less machines; a screencopy-based integration test verifies the
   panel is actually composited.
-- **0.4 — System services:** notification daemon/client, portal backend,
-  clipboard history, MPRIS, idle/inhibit, screenshot and screen recording
-  integration over PipeWire.
+- **0.4 — Bar and capture (done):** the native `kairo-bar` status bar with
+  system modules (CPU, memory, temperature, battery, backlight, network, ALSA
+  volume), GTK color-scheme detection, `~/.config/kairo/bar.conf`
+  configuration, and `kairo-screenshot` full-output PNG capture. Rofi 2.x is
+  the launcher with a matching theme and default binding.
+- **0.5 — System services (next):** notification daemon (org.freedesktop.
+  Notifications over D-Bus), portal backend, clipboard history, MPRIS,
+  idle/inhibit actions, screen recording over PipeWire.
 - **0.5 — Desktop integration:** settings application, lock screen client,
   theme/accent pipeline, application launcher search, session manager and
   display-manager integration.
@@ -66,6 +71,27 @@ headless integration smoke test, and its user-visible behavior is documented.
 - [x] `tests/shell.sh` verifies composition with real screencopy pixels.
 - [x] An online installation path exists: GitHub release tarballs, a
   `curl`-able `install.sh`, an Arch PKGBUILD and a wayland session file.
+
+## 0.4 acceptance criteria
+
+- [x] `kairo-bar` maps as a layer-shell surface and is verified composited by
+  screencopy (`tests/bar.sh`), including after an IPC tag switch.
+- [x] Status modules read /proc, /sys and the ALSA mixer with no subprocesses
+  and no busy loops; status refresh is 2 s, the clock 1 s, and redraws are
+  event-driven with double-buffered shm surfaces.
+- [x] Volume click/scroll and backlight click/scroll act through the ALSA API
+  and sysfs writes respectively; failures degrade to hidden modules or
+  reported warnings, never crashes.
+- [x] A PipeWire-less environment cannot crash the bar through the ALSA
+  plugin: the mixer falls back to `hw:0` when `$XDG_RUNTIME_DIR/pipewire-0`
+  is absent.
+- [x] The focused window title follows IPC `window` events, including
+  unfocus (title clears).
+- [x] GTK dark/light detection with explicit override in `bar.conf`.
+- [x] `kairo-screenshot` writes a valid PNG verified by `tests/screenshot.sh`
+  (zlib-decoded raw size must match exactly).
+- [x] Rofi 2.x wayland theme (`packaging/rofi/kairo.rasi`), Super+D binding
+  in the example config, packaged and documented.
 
 ## 0.3 design constraints
 

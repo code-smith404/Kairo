@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const version = "0.3.0";
+const version = "0.4.0";
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -60,33 +60,55 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run Kairo");
     run_step.dependOn(&run_cmd.step);
 
-    const shell_mod = b.createModule(.{
-        .root_source_file = b.path("apps/shell/main.zig"),
+    const bar_mod = b.createModule(.{
+        .root_source_file = b.path("apps/bar/main.zig"),
         .target = target,
         .optimize = optimize,
         .link_libc = true,
     });
-    shell_mod.addIncludePath(b.path("protocols/generated/client"));
-    shell_mod.addCSourceFile(.{
+    bar_mod.addIncludePath(b.path("protocols/generated/client"));
+    bar_mod.addCSourceFile(.{
         .file = b.path("protocols/generated/client/wlr-layer-shell-unstable-v1-protocol.c"),
         .flags = &.{},
     });
-    shell_mod.addCSourceFile(.{
+    bar_mod.addCSourceFile(.{
         .file = b.path("protocols/generated/client/xdg-shell-protocol.c"),
         .flags = &.{},
     });
-    shell_mod.linkSystemLibrary("wayland-client", .{ .needed = true });
-    shell_mod.linkSystemLibrary("cairo", .{ .needed = true });
-    shell_mod.linkSystemLibrary("m", .{});
-    shell_mod.addImport("ipc_protocol", ipc_protocol);
-    const shell_obj = b.addObject(.{ .name = "kairo-shell", .root_module = shell_mod });
-    shell_obj.bundle_compiler_rt = true;
-    const shell_link = b.addSystemCommand(&.{ "cc", "-o" });
-    const shell_linked = shell_link.addOutputFileArg("kairo-shell");
-    shell_link.addFileArg(shell_obj.getEmittedBin());
-    shell_link.addArgs(&.{ "-lwayland-client", "-lcairo", "-lm", "-ldl", "-lpthread" });
-    const install_shell = b.addInstallFileWithDir(shell_linked, .bin, "kairo-shell");
-    b.getInstallStep().dependOn(&install_shell.step);
+    bar_mod.linkSystemLibrary("wayland-client", .{ .needed = true });
+    bar_mod.linkSystemLibrary("cairo", .{ .needed = true });
+    bar_mod.linkSystemLibrary("alsa", .{ .needed = true });
+    bar_mod.linkSystemLibrary("m", .{});
+    bar_mod.addImport("ipc_protocol", ipc_protocol);
+    const bar_obj = b.addObject(.{ .name = "kairo-bar", .root_module = bar_mod });
+    bar_obj.bundle_compiler_rt = true;
+    const bar_link = b.addSystemCommand(&.{ "cc", "-o" });
+    const bar_linked = bar_link.addOutputFileArg("kairo-bar");
+    bar_link.addFileArg(bar_obj.getEmittedBin());
+    bar_link.addArgs(&.{ "-lwayland-client", "-lcairo", "-lasound", "-lm", "-ldl", "-lpthread" });
+    const install_bar = b.addInstallFileWithDir(bar_linked, .bin, "kairo-bar");
+    b.getInstallStep().dependOn(&install_bar.step);
+
+    const screenshot_mod = b.createModule(.{
+        .root_source_file = b.path("apps/screenshot/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    screenshot_mod.addIncludePath(b.path("protocols/generated/client"));
+    screenshot_mod.addCSourceFile(.{
+        .file = b.path("protocols/generated/client/wlr-screencopy-unstable-v1-protocol.c"),
+        .flags = &.{},
+    });
+    screenshot_mod.linkSystemLibrary("wayland-client", .{ .needed = true });
+    const screenshot_obj = b.addObject(.{ .name = "kairo-screenshot", .root_module = screenshot_mod });
+    screenshot_obj.bundle_compiler_rt = true;
+    const screenshot_link = b.addSystemCommand(&.{ "cc", "-o" });
+    const screenshot_linked = screenshot_link.addOutputFileArg("kairo-screenshot");
+    screenshot_link.addFileArg(screenshot_obj.getEmittedBin());
+    screenshot_link.addArgs(&.{ "-lwayland-client", "-lm", "-ldl", "-lpthread" });
+    const install_screenshot = b.addInstallFileWithDir(screenshot_linked, .bin, "kairo-screenshot");
+    b.getInstallStep().dependOn(&install_screenshot.step);
 
     const ctl_mod = b.createModule(.{
         .root_source_file = b.path("cmd/kairoctl.zig"),

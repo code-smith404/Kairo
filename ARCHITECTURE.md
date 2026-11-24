@@ -13,13 +13,16 @@ kairo (compositor)
 ├── wlroots backend, renderer, scene graph, seat and protocols
 ├── session lock policy (ext-session-lock-v1)
 ├── IPC broker ($XDG_RUNTIME_DIR/kairo.sock)
-└── shell/service clients (kairo-shell, notifications, portals)
+└── shell/service clients (kairo-bar, kairo-screenshot, notifications, portals)
 ```
 
-`kairo-shell` is the first such client: a layer-shell panel that renders tag
-buttons, the active layout and a clock with cairo, subscribes to IPC events
-and dispatches tag switches through the same public socket as `kairoctl`. It
-has no privileges beyond those of any other Wayland client.
+`kairo-bar` is the first such client: a layer-shell status bar that renders
+tag buttons, the focused window title and system modules (CPU, memory,
+temperature, battery, backlight, network, ALSA volume) with cairo, subscribes
+to IPC events and dispatches tag switches through the same public socket as
+`kairoctl`. It holds no privileges beyond those of any other Wayland client.
+`kairo-screenshot` captures outputs through wlr-screencopy. Later clients
+(notifications, portals) will follow the same process boundary.
 
 The compositor never embeds a second event loop and never blocks the Wayland
 loop with shell work. Desktop services are separate processes and communicate
@@ -39,7 +42,8 @@ through Wayland protocols, D-Bus, PipeWire or the Kairo IPC socket.
 | Config | `src/config/` | validated immutable config and atomic reload |
 | IPC | `src/ipc/` | newline JSON protocol and non-blocking Unix socket |
 | Effects | `src/effects/` | SceneFX blur/shadow/radius, compiled out without SceneFX |
-| Shell client | `apps/shell/` | layer-shell panel, shm double-buffering, IPC subscription, tag dispatch |
+| Bar client | `apps/bar/` | layer-shell bar, shm double-buffering, IPC subscription, /proc + /sys + ALSA modules |
+| Screenshot client | `apps/screenshot/` | wlr-screencopy capture, PNG encoding |
 
 ## Session lock flow
 

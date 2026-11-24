@@ -46,10 +46,15 @@ jobs:
           KAIRO_BIN=./zig-out-plain/bin/kairo WLR_RENDERER=pixman \
             timeout 20 ./tests/session_lock.sh
 
-      - name: Shell integration
+      - name: Bar integration
         run: |
           KAIRO_BIN=./zig-out-plain/bin/kairo WLR_RENDERER=pixman \
-            timeout 30 ./tests/shell.sh
+            timeout 30 ./tests/bar.sh
+
+      - name: Screenshot integration
+        run: |
+          KAIRO_BIN=./zig-out-plain/bin/kairo WLR_RENDERER=pixman \
+            timeout 30 ./tests/screenshot.sh
 
       - name: Headless smoke test
         run: |

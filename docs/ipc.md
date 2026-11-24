@@ -171,7 +171,7 @@ states without applying a broken partial update. Unknown event names are
 ignored. Subscriptions are per connection and are cleared when the connection
 closes.
 
-`kairo-shell` is itself a subscriber: it follows `tag`, `output` and
+`kairo-bar` is itself a subscriber: it follows `tag`, `output` and
 `session` events to keep its panel current and dispatches `view_tag N` on
 panel clicks. Event emission is guaranteed for `view_tag`/`toggle_tag` and
 layout changes, so panels built on the same protocol stay in sync.
