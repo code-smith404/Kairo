@@ -100,7 +100,17 @@ install_from_release() {
     mkdir -p "$work/inst"
     tar -xzf "$work/kairo.tar.gz" -C "$work/inst"
 
-    install_binaries "$work/inst"
+    # Release packages are wrapped in a single top-level directory
+    # (kairo-<version>-x86_64-linux/); descend into it when present.
+    if [ -d "$work/inst/bin" ]; then
+        src_dir="$work/inst"
+    else
+        topdir=$(find "$work/inst" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+        [ -n "$topdir" ] || fail "unexpected package layout"
+        src_dir="$topdir"
+    fi
+
+    install_binaries "$src_dir"
 
     say "installed Kairo $tag to $PREFIX"
 }
