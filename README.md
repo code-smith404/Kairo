@@ -52,8 +52,7 @@ tarball from GitHub and installs `kairo`, `kairoctl`, `kairo-bar` and
 `kairo-screenshot` under `/usr/local`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/code-smith404/Kairo/main/install.sh | sh   # installs to ~/.local if /usr/local is not writable
-curl -fsSL https://raw.githubusercontent.com/code-smith404/Kairo/main/install.sh | sudo sh   # system-wide install to /usr/local
+curl -fsSL https://raw.githubusercontent.com/code-smith404/Kairo/main/install.sh | sudo sh
 ```
 
 Alternatives — release tarballs, Arch `PKGBUILD` and building from source —
