@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm --needed base-devel git curl \
+            wlroots0.20 scenefx wayland wayland-protocols libxkbcommon \
+            pixman libdrm mesa xorg-xwayland
+
+      - uses: actions/checkout@v4
+
+      - name: Install Zig 0.15.2
+        run: |
+          curl -fsSL -o /opt/zig.tar.xz \
+            https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz
+          tar -C /opt -xf /opt/zig.tar.xz
+          ln -s /opt/zig-x86_64-linux-0.15.2/zig /usr/local/bin/zig
+          zig version
+
+      - name: Build (ReleaseSafe, SceneFX)
+        run: zig build -Doptimize=ReleaseSafe
+
+      - name: Build (ReleaseSafe, software renderer)
+        run: zig build -Doptimize=ReleaseSafe -Dscenefx=false --prefix zig-out-plain
+
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          if ldd zig-out-plain/bin/kairo | grep -q libscenefx; then
+            echo "software build unexpectedly links SceneFX" >&2
+            exit 1
+          fi
+          export XDG_RUNTIME_DIR=/tmp/kairo-runtime
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          timeout 30 env WLR_RENDERER=pixman ./zig-out-plain/bin/kairo \
+            --headless --exit-after 1500 --log-level info
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          version=$(./zig-out/bin/kairo --version | awk '{print $2}')
+          pkg="kairo-${version}-x86_64-linux"
+          mkdir -p "pack/$pkg"
+          cp -r zig-out/bin "pack/$pkg/"
+          mkdir -p "pack/$pkg/wayland-sessions" "pack/$pkg/share/doc/kairo/examples"
+          cp packaging/wayland-sessions/kairo.desktop "pack/$pkg/wayland-sessions/"
+          cp examples/config "pack/$pkg/share/doc/kairo/examples/config"
+          cp README.md LICENSE "pack/$pkg/share/doc/kairo/"
+          cp docs/*.md "pack/$pkg/share/doc/kairo/"
+          tar -czf "kairo-${version}-x86_64-linux.tar.gz" -C pack "$pkg"
+          sha256sum "kairo-${version}-x86_64-linux.tar.gz" > "kairo-${version}-x86_64-linux.tar.gz.sha256"
+          echo "version=$version" >> "$GITHUB_ENV"
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            kairo-*-x86_64-linux.tar.gz
+            kairo-*-x86_64-linux.tar.gz.sha256
+          generate_release_notes: true

@@ -127,6 +127,7 @@ pub const Output = struct {
         self.tags.view(tag_index);
         self.server.arrangeAll();
         self.server.focusTopWindow();
+        self.server.emitTag();
     }
 
     pub fn toggleTag(self: *Output, tag_index: u32) void {
@@ -134,6 +135,7 @@ pub const Output = struct {
         self.tags.toggle(tag_index);
         self.server.arrangeAll();
         self.server.focusTopWindow();
+        self.server.emitTag();
     }
 
     pub fn setLayout(self: *Output, kind: layout.Kind) void {

@@ -9,6 +9,8 @@ Kairo is a tiling Wayland compositor written in Zig, inspired by
 [SceneFX](https://github.com/wlrfx/scenefx) 0.5 for blur, shadows and rounded
 corners.
 
+This project or repo is not vibe coded btw.
+
 Kairo is deliberately small: one event loop, one scene graph, a pure-Zig layout
 engine, and a JSON control socket. The compositor does not embed C beyond the
 wlroots/SceneFX/libwayland ABI.
@@ -28,22 +30,37 @@ beta software. The table below describes what is implemented today.
 | Input | libinput via wlroots, xkbcommon keymaps, keyboard groups, repeats, binding modes, mouse/axis bindings, interactive move/resize |
 | Scratchpads | Named scratchpads with rules and toggle commands |
 | Overview | Live window grid overview (Super+Shift+Space) |
+| Shell | `kairo-shell` layer-shell panel: tag buttons (clickable via IPC), layout name, clock |
 | Session | `ext-session-lock-v1`, lock-aware input policy, configurable locker command |
 | Control | `kairoctl` JSON IPC, state queries, command dispatch, event subscription |
 | Configuration | Mango-style INI/TOML-like file, includes, variables, hot reload on Super+R |
 
-Not yet implemented: the graphical switcher overlay and
+Not yet implemented: the shell launcher, the graphical switcher overlay and
 `ext-background-effect-v1` for client-requested blur. Session locking is
 implemented by the compositor protocol; authentication and the lock-screen UI
 belong to the configured lock client. `kairoctl` and the config loader report
 unavailable features plainly instead of pretending they work.
+
+## Install
+
+The quickest way is the online installer, which downloads the latest release
+tarball from GitHub and installs `kairo`, `kairoctl` and `kairo-shell` under
+`/usr/local`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/code-smith404/Kairo/main/install.sh | sh
+```
+
+Alternatives — release tarballs, Arch `PKGBUILD` and building from source —
+are described in [docs/installation.md](docs/installation.md).
 
 ## Requirements
 
 Kairo targets **Zig 0.15.2** and needs the development headers for:
 
 - wlroots 0.20 (`wlroots0.20` on Arch)
-- SceneFX 0.5 (`scenefx`)
+- SceneFX 0.5 (`scenefx`) — omitted with `-Dscenefx=false`
+- cairo — used by `kairo-shell`
 - wayland-server, wayland-protocols
 - libxkbcommon, pixman, libdrm, Mesa/EGL, GBM
 - XWayland (optional at runtime, enabled by default)
@@ -67,6 +84,7 @@ Build output:
 
 - `zig-out/bin/kairo` — the compositor
 - `zig-out/bin/kairoctl` — the control client
+- `zig-out/bin/kairo-shell` — the desktop shell (layer-shell panel)
 
 Run the unit test suite with:
 

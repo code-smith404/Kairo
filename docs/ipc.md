@@ -57,7 +57,7 @@ Command-style requests that do not query state return `{"ok":true}`.
   "ok": true,
   "data": {
     "name": "kairo",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "wlroots": "0.20",
     "scenefx": true
   }
@@ -143,7 +143,7 @@ and adds `version` and `focused_window`:
 {
   "ok": true,
   "data": {
-    "version": "0.2.0",
+    "version": "0.3.0",
     "focused_window": 2,
     "windows": [],
     "monitors": [],
@@ -171,6 +171,11 @@ states without applying a broken partial update. Unknown event names are
 ignored. Subscriptions are per connection and are cleared when the connection
 closes.
 
+`kairo-shell` is itself a subscriber: it follows `tag`, `output` and
+`session` events to keep its panel current and dispatches `view_tag N` on
+panel clicks. Event emission is guaranteed for `view_tag`/`toggle_tag` and
+layout changes, so panels built on the same protocol stay in sync.
+
 ## Example session
 
 ```sh
@@ -179,7 +184,7 @@ $ kairoctl version
   "ok": true,
   "data": {
     "name": "kairo",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "wlroots": "0.20",
     "scenefx": true
   }

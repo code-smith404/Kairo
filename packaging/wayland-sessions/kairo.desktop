@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Kairo
+Comment=MangoWM-inspired tiling Wayland compositor
+Exec=kairo
+Type=Application
+DesktopNames=Kairo
+Keywords=tiling;wayland;compositor;

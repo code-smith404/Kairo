@@ -13,8 +13,13 @@ kairo (compositor)
 ├── wlroots backend, renderer, scene graph, seat and protocols
 ├── session lock policy (ext-session-lock-v1)
 ├── IPC broker ($XDG_RUNTIME_DIR/kairo.sock)
-└── shell/service clients (future kairo-shell, notifications, portals)
+└── shell/service clients (kairo-shell, notifications, portals)
 ```
+
+`kairo-shell` is the first such client: a layer-shell panel that renders tag
+buttons, the active layout and a clock with cairo, subscribes to IPC events
+and dispatches tag switches through the same public socket as `kairoctl`. It
+has no privileges beyond those of any other Wayland client.
 
 The compositor never embeds a second event loop and never blocks the Wayland
 loop with shell work. Desktop services are separate processes and communicate
@@ -34,6 +39,7 @@ through Wayland protocols, D-Bus, PipeWire or the Kairo IPC socket.
 | Config | `src/config/` | validated immutable config and atomic reload |
 | IPC | `src/ipc/` | newline JSON protocol and non-blocking Unix socket |
 | Effects | `src/effects/` | SceneFX blur/shadow/radius, compiled out without SceneFX |
+| Shell client | `apps/shell/` | layer-shell panel, shm double-buffering, IPC subscription, tag dispatch |
 
 ## Session lock flow
 

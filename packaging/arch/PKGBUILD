@@ -25,10 +25,13 @@ package() {
     cd "$srcdir/Kairo"
     install -Dm755 zig-out/bin/kairo "$pkgdir/usr/bin/kairo"
     install -Dm755 zig-out/bin/kairoctl "$pkgdir/usr/bin/kairoctl"
+    install -Dm755 zig-out/bin/kairo-shell "$pkgdir/usr/bin/kairo-shell"
     install -Dm644 README.md "$pkgdir/usr/share/doc/kairo/README.md"
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/kairo/LICENSE"
     install -Dm644 examples/config "$pkgdir/usr/share/doc/kairo/examples/config"
     install -Dm644 docs/configuration.md "$pkgdir/usr/share/doc/kairo/configuration.md"
     install -Dm644 docs/keybindings.md "$pkgdir/usr/share/doc/kairo/keybindings.md"
     install -Dm644 docs/ipc.md "$pkgdir/usr/share/doc/kairo/ipc.md"
+    install -Dm644 packaging/wayland-sessions/kairo.desktop \
+        "$pkgdir/usr/share/wayland-sessions/kairo.desktop"
 }

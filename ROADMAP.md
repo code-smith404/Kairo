@@ -12,10 +12,11 @@ headless integration smoke test, and its user-visible behavior is documented.
 - **0.2 — Session core (done in this change):** `ext-session-lock-v1` support,
   lock-aware keyboard/pointer/binding policy, configurable locker command,
   binding modes, and session state in IPC.
-- **0.3 — Desktop shell (next):** a separate `kairo-shell` client built on
-  layer-shell: panel, workspace switcher, clock/status, launcher, and a shared
-  shell rendering surface. The shell will consume the existing IPC protocol so
-  it cannot bypass compositor policy.
+- **0.3 — Desktop shell (done):** `kairo-shell`, a separate layer-shell client
+  with a panel (tag buttons, layout name, clock) driven entirely by IPC
+  subscription events and clickable tag switching. Software-buffer rendering
+  works on GPU-less machines; a screencopy-based integration test verifies the
+  panel is actually composited.
 - **0.4 — System services:** notification daemon/client, portal backend,
   clipboard history, MPRIS, idle/inhibit, screenshot and screen recording
   integration over PipeWire.
@@ -44,6 +45,27 @@ headless integration smoke test, and its user-visible behavior is documented.
 - [x] Session state is queryable over IPC and emits a `session` event.
 - [x] Unit tests cover mode parsing, invalid modes, and locker configuration.
 - [x] Headless lock/unlock test client passes against the built compositor.
+
+## 0.3 acceptance criteria
+
+- [x] `kairo-shell` builds and installs alongside `kairo` and `kairoctl`.
+- [x] The panel maps as a `zwlr_layer_shell_v1` top-layer surface, anchored to
+  the top edge, with an exclusive zone; multiple outputs get one panel each.
+- [x] Tag buttons, active layout name and a clock are rendered through cairo
+  into double-buffered shm buffers at the output scale.
+- [x] The shell subscribes to IPC `tag`/`output`/`session` events and redraws
+  only when its state actually changes; the 1 Hz clock tick is the only
+  steady-state redraw.
+- [x] Clicking a tag button dispatches `view_tag N` through the same IPC socket
+  used by `kairoctl` (no privileged back door).
+- [x] A missing compositor, missing layer-shell or unreachable IPC socket
+  degrades cleanly: the panel still renders, IPC reconnection is handled by
+  dropping the client.
+- [x] The first layer-surface commit no longer enters a configure/commit loop
+  (surfaces are reconfigured only when the usable area actually changes).
+- [x] `tests/shell.sh` verifies composition with real screencopy pixels.
+- [x] An online installation path exists: GitHub release tarballs, a
+  `curl`-able `install.sh`, an Arch PKGBUILD and a wayland session file.
 
 ## 0.3 design constraints
 

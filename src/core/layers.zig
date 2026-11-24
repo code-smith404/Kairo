@@ -15,6 +15,9 @@ pub const LayerSurface = struct {
     tree: *c.struct_wlr_scene_tree,
     output: *Output,
     mapped: bool = false,
+    configured_once: bool = false,
+    last_full: geom.Box = .{},
+    last_usable: geom.Box = .{},
     listeners: struct {
         map: wl.Listener,
         unmap: wl.Listener,
@@ -59,6 +62,12 @@ pub const LayerSurface = struct {
         };
         surface.data = self;
         surface.surface.*.data = self;
+        const L = &self.listeners;
+        L.map.data = self;
+        L.unmap.data = self;
+        L.commit.data = self;
+        L.destroy.data = self;
+        L.new_popup.data = self;
 
         wl.listen(&surface.surface.*.events.map, &self.listeners.map, handleMap);
         wl.listen(&surface.surface.*.events.unmap, &self.listeners.unmap, handleUnmap);
@@ -93,12 +102,12 @@ pub const LayerSurface = struct {
     fn handleCommit(listener: [*c]c.struct_wl_listener, data: ?*anyopaque) callconv(.c) void {
         _ = data;
         const self: *LayerSurface = @ptrCast(@alignCast(@as(*wl.Listener, @ptrCast(listener)).data.?));
-        if (!self.layer_surface.initialized) return;
-        if (self.layer_surface.initial_commit) {
-            // The initial configure is sent by the scene helper, which also
-            // applies the desired size and anchors.
-        }
-        self.server.layers.arrangeAll();
+        // The first commit has no buffer: it is the client's request for a
+        // configure.  Do not return early here, or the surface waits forever
+        // for a configure that never arrives.  Later buffer commits must not
+        // trigger another configure, or a client that commits on every frame
+        // would cause an endless configure round trip.
+        if (!self.configured_once) self.server.layers.arrangeAll();
         self.output.arrange();
     }
 
@@ -172,9 +181,20 @@ pub const Layers = struct {
         while (layer_idx >= 0) : (layer_idx -= 1) {
             for (self.surfaces.items) |ls| {
                 if (ls.output != output) continue;
-                if (!ls.mapped or !ls.layer_surface.initialized) continue;
+                // Unmapped surfaces still need their initial configure; mapped
+                // surfaces need reconfiguration whenever the usable area moves.
                 if (@as(i32, @intCast(ls.layer_surface.current.layer)) != layer_idx) continue;
-                c.wlr_scene_layer_surface_v1_configure(ls.scene_layer, &full, &usable);
+                const full_box = geom.Box.fromC(full);
+                const usable_box = geom.Box.fromC(usable);
+                if (!ls.configured_once or
+                    !std.meta.eql(ls.last_full, full_box) or
+                    !std.meta.eql(ls.last_usable, usable_box))
+                {
+                    c.wlr_scene_layer_surface_v1_configure(ls.scene_layer, &full, &usable);
+                    ls.configured_once = true;
+                    ls.last_full = full_box;
+                    ls.last_usable = geom.Box.fromC(usable);
+                }
             }
         }
         output.usable = geom.Box.fromC(usable);
